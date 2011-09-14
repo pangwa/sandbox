@@ -1,0 +1,95 @@
+<html>
+<head>
+<title>gl content</title>
+<script type="text/javascript" src="scripts/glge-compiled-min.js"></script> 
+<script type="text/javascript" src="scripts/jquery-1.6.3.min.js"></script> 
+<script language="javascript" type="text/javascript">                                         
+    var canvasObject = $("canvas");
+    var doc = new GLGE.Document();
+
+
+$(document).ready (function()
+{
+    canvasObject = document.getElementById( 'canvas' );
+    doc.onLoad = function()
+    {
+        var renderer = new GLGE.Renderer(canvasObject);
+        var scene = new GLGE.Scene();
+        scene = doc.getElement("mainScene");
+        renderer.setScene(scene);
+        renderer.render();
+
+        var black= doc.getElement( "black" );
+        var layer1 = doc.getElement("layer1");
+    /**
+	Create the data need for our lines
+	**/
+	var positions=[];
+    var push=function(x,y, z){
+        positions.push(x);
+        positions.push(y);
+        positions.push(z);
+    }
+
+    push (0, 0, 0);
+    push (0, 10, 0);
+    push (-5, 3, 0);
+    push (-5, 8, 0);
+
+    var line=(new GLGE.Object).setDrawType(GLGE.DRAW_LINES);
+    line.setMesh((new GLGE.Mesh).setPositions(positions));
+    line.setMaterial(black);
+    line.setZtransparent(false);
+    layer1.addObject(line);
+    renderer.render ();
+    };
+    doc.parseScript("xmlglge");
+});
+ </script>  
+
+ <script id="xmlglge" type="text/xml">
+<glge>
+
+    <mesh id="triangle">
+        <positions>
+            -1, 1, 0,
+            -1 ,0, 0,
+            0, 0, 0,
+            1, 0, 0,
+            1, 1, 0,
+            0, 1, 0
+        </positions>
+        <normals>
+            0, 0, 1, 
+            0, 0, 1, 
+            0, 0, 1,
+            0, 0, 1,
+            0, 0, 1,
+            0, 0, 1
+        </normals>
+        <faces>
+            0, 1, 2, 5, 3, 4
+        </faces>
+    </mesh>
+
+    <material id="triangleMat" specular="1" color="#aaa" />
+    <material id="black" specular="0" color="#0aa" emit="1" />
+
+    <camera id="mainCamera" />
+
+    <scene id="mainScene" camera="#mainCamera" ambient_color="#fff">
+        <group id="layer1">
+        <object id="triangle" mesh="#triangle" material="#triangleMat" loc_z="-4" />
+        </group>
+    </scene>
+
+</glge>
+</script>
+</head>
+<body>
+<div>
+<canvas id='canvas' width="400" height="300">
+</canvas>
+</div>
+</body>
+</html>

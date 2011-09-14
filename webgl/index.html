@@ -1,0 +1,26 @@
+<html>
+	<head> 
+		<title>GLGE Demo</title> 
+	</head>
+	<body>
+		<canvas id="canvas" width="400" height="300"></canvas>
+
+		<script type="text/javascript" src="scripts/glge-compiled-min.js"></script>
+
+		<script type="text/javascript">
+			var canvasElement = $("canvas");
+			var doc = new GLGE.Document();
+			
+            doc.load("triangle.xml");
+			
+			doc.onLoad = function() {
+				var renderer = new GLGE.Renderer(canvasElement);
+				var scene = new GLGE.Scene();
+                scene = doc.getElement("mainScene");
+				renderer.setScene(scene);
+				renderer.render();
+			}
+		</script>
+	</body>
+
+</html>
