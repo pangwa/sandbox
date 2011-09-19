@@ -2,6 +2,7 @@ var surfacePoints = [];
 var faces = []; 
 var facePts = [];
 var theCamera;
+var phObj;
 
 function webGLStart() {
     var surface = new PhiloGL.O3D.Model({
@@ -87,7 +88,7 @@ function webGLStart() {
               20, 21, 22, 20, 22, 23]
 
         });
-  PhiloGL('lesson01-canvas', {
+   PhiloGL('lesson01-canvas', {
     program: {
       from: 'ids',
       vs: 'shader-vs',
@@ -144,6 +145,8 @@ function webGLStart() {
               {
                   var id = parseInt($(this).attr("id"));
                   var pt = $.map($(this).text().split(" "), parseFloat);
+                  if (pt.length != 3)
+                      console.log ('error');
                   surfacePoints[id] = pt;
               }
           ); 
@@ -163,9 +166,11 @@ function webGLStart() {
            {
                if (surfacePoints[i])
                {
-                   vertices[i * 3] = surfacePoints[i][0];
-                   vertices[i * 3+ 1] = surfacePoints[i][1];
-                   vertices[i * 3+ 2] = surfacePoints[i][2];
+                   //
+                   // swap x, y
+                   vertices[i * 3] = surfacePoints[i][1];
+                   vertices[i * 3 + 1] = surfacePoints[i][0];
+                   vertices[i * 3 + 2] = surfacePoints[i][2];
                    }
                    else
                    {
@@ -195,38 +200,7 @@ function webGLStart() {
 
        surface.texCoords = textCoords;
 
-       i = 0;
-       //arrayTemp[i++] = 0;
-       //arrayTemp[i++]= 0;
-       //arrayTemp[i++] = 0;
-       //arrayTemp[i++] = 10;
-       //arrayTemp[i++] = 0;
-       //arrayTemp[i++] = 0;
-       //arrayTemp[i++] = 10;
-       //arrayTemp[i++] = 10;
-       //arrayTemp[i++] = 0;
-
-      // arrayTemp[i++] = 4;
-      // arrayTemp[i++] = 4;
-      // arrayTemp[i++] = 0;
-      // arrayTemp[i++] = 8;
-      // arrayTemp[i++] = 8;
-      // arrayTemp[i++] = 0;
-      // arrayTemp[i++] = 10;
-      // arrayTemp[i++] = 6;
-      // arrayTemp[i++] = 0;
-
-       //facePts = new Float32Array (arrayTemp.length);
-       //facePts.set (arrayTemp);
-       //for (i = 0; i < 9; i++)
-       //    console.log (facePts[i]);
-
-      // var surface = new PhiloGL.O3D.Model({
-      //         texture: "surface.png",
-      //         vertices: surfacePoints,
-      //         indices: 
-      //     });
-     //set buffers with cube data
+       //set buffers with cube data
      program.setBuffers({
              'aVertexPosition': {
                  value: surface.vertices,
@@ -243,51 +217,26 @@ function webGLStart() {
              }
          });
 
-       //program.setBuffers({
-       //        attribute: 'aVertexPosition',
-       //        value: facePts,
-       //        size: 3
-       //    });
-       //program.setBuffer('surfacesColors', {
-       //        attribute: 'aVertexColor',
-       //        value: new Float32Array([1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1]),
-       //        size: 4
-       //    });
-       //program.setBuffer('surfaceTextureCoord', {
-       //        attribute: 'aTextureCoord',
-       //        value: [0.0, 1.0, 0.0, 0.0],
-       //        size: 2
-       //    });
-
-       //camera = new PhiloGL.Camera (45, 1, 0.1, 5000 );
-       //    {
-       //        position: {x:4000, y: 4900, z: 75}
-       //    });
-      camera.view.id();
-      //camera.view.$translate(4000, 3800, 0);
-      //camera.view.$translate(0, 0, -30);
-      //surface.position.set(4000, 4000, -8);
-      surface.update ();
-      //camera.view.$translate(-4000, -4000, -10);
+     surface.update ();
       camera.view.$translate(-4000, -4200, -6000);
-      program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
-      program.setTexture ("surface.gif");//, {
-       //        textureType: gl.TEXTURE_2D,
-       //        TEXTURE_MAG_FILTER: "LINEAR"
-       //    });
-       program.setUniform('uMVMatrix', camera.view);
-       program.setUniform('uPMatrix', camera.projection);
-       program.setUniform('uSampler', 0);
-       gl.drawElements(gl.TRIANGLES, surface.indices.length, gl.UNSIGNED_SHORT, 0);
-       //gl.drawArrays(gl.TRIANGLES, 0, 3);
+      theCamera.view.$rotateXYZ(90, 0, 0);
+      theCamera.view.$rotateXYZ(0, 0, 180);
+      rCube = 0;
+       //draw ();
        setInterval(draw, 1000/60);
 
        console.log ("camera.position", camera);
-       rCube = 0;
        y = 0;
+       p = [3800, 4200, 82];
+       c = [3850, 4200, 80];
+       u = [0, 0, 1];
+
+       camera.view.lookAt (p, c, u);
        function draw ()
        {
-           //camera.view.$translate(-0, -2, 0);
+           //camera.view.lookAt (p, c, u);
+           //theCamera.view.$rotateXYZ (5, 0, 0);
+           //camera.view.$translate(-2, 0, 0);
            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
            program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
            //program.setBuffer("surfaces");
@@ -295,11 +244,11 @@ function webGLStart() {
            rCube+= 0.01;
            //y += 5;
            //surface.position.set(0, y, 0);
-           surface.rotation.set (rCube, rCube, rCube);
-           surface.update ();
-           view.mulMat42 (camera.view, surface.matrix);
+           //surface.rotation.set (rCube, rCube, rCube);
+           //surface.update ();
+           view.mulMat42 (theCamera.view, surface.matrix);
            program.setUniform('uMVMatrix', view);
-           program.setUniform('uPMatrix', camera.projection);
+           program.setUniform('uPMatrix', theCamera.projection);
            program.setUniform('uSampler', 0);
            gl.drawElements(gl.TRIANGLES, surface.indices.length, gl.UNSIGNED_SHORT, 0);
        }
@@ -309,7 +258,7 @@ function webGLStart() {
              pos = {
                  x: e.x,
                  y: e.y
-             };
+             };theCamera.projection.$translate(90, 0, 0)
          },
          onDragMove: function(e) {
              camera = this.camera;
@@ -320,9 +269,9 @@ function webGLStart() {
              //camera.position.y += pos.y - e.y;
              camera.view.$translate((e.x - pos.x), e.y - pos.y, 0);
              //console.log (camera.position.x, ", ", camera.position.y);
+             //console.log (e.x - pos.x, " , ", e.y - pos.y);
              pos.x = e.x;
              pos.y = e.y;
-             theCamera = camera;
              //camera.update ();
          },
 
@@ -330,7 +279,7 @@ function webGLStart() {
              e.stop();
              var camera = this.camera;
              //camera.position.z += e.wheel;
-             camera.view.$translate(0, 0, e.wheel);
+             camera.view.$translate(0, 0, e.wheel * 50);
              //console.log (camera.position.x, ", ", camera.position.y);
              //camera.update();
          }
