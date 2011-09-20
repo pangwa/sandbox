@@ -3,6 +3,7 @@ var faces = [];
 var facePts = [];
 var theCamera;
 var phObj;
+var samplePoints = [];
 
 function webGLStart() {
     var surface = new PhiloGL.O3D.Model({
@@ -231,9 +232,25 @@ function webGLStart() {
        c = [5650, 3870, 72];
        u = [0, 0, 1];
 
+       $(xmlDoc).find('Alignment').each (function(){
+               samplePoints.push (handleAlignment ($(this)));
+              });
+
        camera.view.lookAt (p, c, u);
+       var curIndex = 0;
        function draw ()
        {
+           var smpPts = samplePoints[0]["samplePoints"];
+           if (curIndex < (smpPts.length - 1))
+           {
+               var nextPt = smpPts[curIndex + 1];
+               var c = pointFromToDist (smpPts[curIndex], nextPt, 100);
+               c.z = 70;
+               smpPts[curIndex].z = 82;
+               theCamera.view.lookAt (smpPts[curIndex], c, u);
+               curIndex ++;
+           }
+
            //camera.view.lookAt (p, c, u);
            //theCamera.view.$rotateXYZ (5, 0, 0);
            //camera.view.$translate(-2, 0, 0);
@@ -287,6 +304,17 @@ function webGLStart() {
   });  
 }
 
+function pointFromToDist (ptStart, ptEnd, dist)
+{
+    var length = ptStart.distTo(ptEnd);
+    if (length == 0)
+        alert (false);
+
+    var edge = ptEnd.sub(ptStart).unit ();
+    var move = edge.map (function (x) {return x * dist;});
+    return ptStart.add (move);
+}
+
 function getSamplePointsLine (pStart, pEnd, interval)
 {
     var pStart = new PhiloGL.Vec3(pStart[0], pStart[1]);
@@ -310,6 +338,7 @@ function getSamplePointsLine (pStart, pEnd, interval)
     return retArray;
 }
 
+
 function getSamplePointsCurve(pStart, pEnd, ptCenter, radius, length, bClockWise, interval)
 {
     var ptStart = new PhiloGL.Vec3 (pStart[0], pStart[1]);
@@ -319,7 +348,7 @@ function getSamplePointsCurve(pStart, pEnd, ptCenter, radius, length, bClockWise
         return [];
     if (length < interval)
         return [pStart.clone(), pEnd.clone ()];
-    angle = interval / (radius );
+    var angle = interval / (radius );
     if (!bClockWise)
         angle = -angle;
 
@@ -348,3 +377,51 @@ function getSamplePointsCurve(pStart, pEnd, ptCenter, radius, length, bClockWise
     return retArray;
 }
 
+function PointFromStr (str)
+{
+    var pts = $.map(str.trim().split(" "), parseFloat);
+    return new PhiloGL.Vec3(pts[1], pts[0], pts[2]);
+};
+
+var tagHandler =  {Line: function(node)
+    {
+        var ptStart = PointFromStr($(node.find ("Start")[0]).text ());
+        var ptEnd = PointFromStr($(node.find ("End")[0]).text ());
+        return getSamplePointsLine (ptStart, ptEnd, 2);
+    },
+    Curve : function (node)
+    {
+        var ptStart = PointFromStr($(node.find ("Start")[0]).text ());
+        var ptEnd = PointFromStr($(node.find ("End")[0]).text ());
+        var ptCenter= PointFromStr($(node.find ("Center")[0]).text ());
+        var radius = parseFloat (node.attr("radius"));
+        var length = parseFloat (node.attr("length"));
+        var bClockwise = node.attr("rot") == "cw";
+        return getSamplePointsCurve (ptStart, ptEnd, ptCenter, radius, length, bClockwise, 2);
+    }
+    };
+
+function handleAlignment (align)
+{
+    var ret = { name: align.attr("name") };
+    var lSamplePoints = [];
+        $(align.find ("CoordGeom")[0]).children().each (function ()
+        {
+            if(! tagHandler[this.tagName])
+                alert ("unsupported CoordGeom type" + this.tagName);
+            else
+            {
+                var smpPt = tagHandler[this.tagName]($(this));
+                if (lSamplePoints.length > 0 && smpPt.length > 0)
+                {
+                    if (lSamplePoints[lSamplePoints.length - 1].distTo(smpPt[0]) == 0)
+                    {
+                        smpPt = smpPt.slice (1);
+                    }
+                }
+                lSamplePoints = lSamplePoints.concat (smpPt);
+            }
+        });
+    ret ["samplePoints"] = lSamplePoints;
+    return ret;
+}
