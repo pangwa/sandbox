@@ -227,8 +227,8 @@ function webGLStart() {
 
        console.log ("camera.position", camera);
        y = 0;
-       p = [3800, 4200, 82];
-       c = [3850, 4200, 80];
+       p = [5588, 3900, 82];
+       c = [5650, 3870, 72];
        u = [0, 0, 1];
 
        camera.view.lookAt (p, c, u);
@@ -258,7 +258,7 @@ function webGLStart() {
              pos = {
                  x: e.x,
                  y: e.y
-             };theCamera.projection.$translate(90, 0, 0)
+             };
          },
          onDragMove: function(e) {
              camera = this.camera;
@@ -285,5 +285,66 @@ function webGLStart() {
          }
      }
   });  
+}
+
+function getSamplePointsLine (pStart, pEnd, interval)
+{
+    var pStart = new PhiloGL.Vec3(pStart[0], pStart[1]);
+    var pEnd = new PhiloGL.Vec3(pEnd[0], pEnd[1]);
+    if (interval <= 0)
+        return [];
+
+    var length = pStart.distTo(pEnd);
+    if (length < interval)
+        return [pStart.clone(), pEnd.clone()];
+
+    var retArray = [];
+    var edge = pEnd.sub(pStart).unit ();
+    var move = edge.map (function (x) {return x * interval;});
+    for (i = 0, lastPt = pStart; i < length / interval; i++, lastPt.$add(move))
+    {
+        retArray.push (lastPt.clone ());
+    }
+    if (pEnd.distTo(lastPt) > 0.00001)
+        retArray.push (pEnd);
+    return retArray;
+}
+
+function getSamplePointsCurve(pStart, pEnd, ptCenter, radius, length, bClockWise, interval)
+{
+    var ptStart = new PhiloGL.Vec3 (pStart[0], pStart[1]);
+    var ptEnd = new PhiloGL.Vec3 (pEnd[0], pEnd[1]);
+    var ptCenter = new PhiloGL.Vec3 (ptCenter[0], ptCenter[1]);
+    if (interval <= 0)
+        return [];
+    if (length < interval)
+        return [pStart.clone(), pEnd.clone ()];
+    angle = interval / (radius );
+    if (!bClockWise)
+        angle = -angle;
+
+    var ptStartNoOffset = ptStart.sub(ptCenter);
+    
+    function ptByRotate (angle)
+    {
+        var cosp = Math.cos (angle);
+        var sinp = Math.sin (angle);
+        var newPt = ptStartNoOffset.clone();
+        newPt.x = ptStartNoOffset.x * cosp +  ptStartNoOffset.y * sinp;
+        newPt.y = ptStartNoOffset.y * cosp - ptStartNoOffset.x * sinp ;
+        return newPt.$add (ptCenter);
+    };
+
+    retArray = [];
+    lastPt = ptStart;
+    for (i = 0, lastPt = ptStart; i < length / interval; i++, lastPt = ptByRotate(angle * i))
+    {
+        retArray.push (lastPt.clone ());
+    }
+
+    if (ptEnd.distTo(lastPt) > 0.00001)
+        retArray.push (pEnd);
+
+    return retArray;
 }
 
