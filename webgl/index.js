@@ -384,7 +384,7 @@ function webGLStart() {
                            var nextPt = smpPts[curIndex + 1];
                            var c = pointFromToDist (smpPts[curIndex], nextPt, 20);
                            var p = smpPts[curIndex].clone();
-                           c.z = p.z;
+                           c.z = nextPt.z;
                            p.z += 2;
                            theCamera.view.lookAt (p, c, u);
                            drawWorld (app);
@@ -564,7 +564,24 @@ function handleAlignment (align)
                 else 
                     return stnElvList[mid * 2 + 1];
         }
-        return stnElvList[mid * 2 + 1];
+        var nextIndex= mid + 1;
+        var prevIndex= mid;
+        if (stn < stnElvList[mid * 2])
+        {
+            if (mid > 0)
+                prevIndex = mid - 1;
+            nextIndex = mid;
+        }
+
+        var elev = stnElvList[mid * 2 + 1];
+        if (prevIndex != nextIndex)
+        {
+            var totallength = stnElvList[nextIndex*2] - stnElvList[prevIndex * 2];
+            var prevElev = stnElvList[prevIndex*2 + 1];
+            var nextElev = stnElvList[nextIndex*2 + 1];
+            elev = (stn - stnElvList[prevIndex*2]) * nextElev / totallength + (stnElvList[nextIndex*2] - stn) * prevElev / totallength;
+        }
+        return elev;
     };
 
     $(align.find ("CoordGeom")[0]).children().each (function ()
