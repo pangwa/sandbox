@@ -13,10 +13,16 @@ function drawWorld (app)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
     program.setTexture ('surface.png');
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_FILTER, gl.LINEAR)
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    // set to repeating mode
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     //program.setBuffer("surfaces");
     //program.setTexture ('surface.png');
     //y += 5;
@@ -36,35 +42,35 @@ function webGLStart() {
     surface = new PhiloGL.O3D.Model({
             texture: "surface.png",
 
-    vertices: [-1+4000, 4000-1, 1,
-                1+4000, 4000-1, 1,
-                1+4000, 40001, 1,
-               -1+4000, 40001, 1,
+    vertices: [-1, -1, 1,
+                1, -1, 1,
+                1, 1, 1,
+               -1, 1, 1,
 
-               -1+4000, 4000-1, -1,
-               -1+4000, 40001, -1,
-                1+4000, 40001, -1,
-                1+4000, 4000-1, -1,
+               -1, -1, -1,
+               -1, 1, -1,
+                1, 1, -1,
+                1, -1, -1,
 
-               -1+4000, 40001, -1,
-               -1+4000, 40001, 1,
-                1+4000, 40001, 1,
-                1+4000, 40001, -1,
+               -1, 1, -1,
+               -1, 1, 1,
+                1, 1, 1,
+                1, 1, -1,
 
-               -1+4000, 4000-1, -1,
-                1+4000, 4000-1, -1,
-                1+4000, 4000-1, 1,
-               -1+4000, 4000-1, 1,
+               -1, -1, -1,
+                1, -1, -1,
+                1, -1, 1,
+               -1, -1, 1,
 
-                1+4000, 4000-1, -1,
-                1+4000, 40001, -1,
-                1+4000, 40001, 1,
-                1+4000, 4000-1, 1,
+                1, -1, -1,
+                1, 1, -1,
+                1, 1, 1,
+                1, -1, 1,
 
-               -1+4000, 4000-1, -1,
-               -1+4000, 4000-1, 1,
-               -1+4000, 40001, 1,
-               -1+4000, 40001, -1],
+               -1, -1, -1,
+               -1, -1, 1,
+               -1, 1, 1,
+               -1, 1, -1],
 //            vertices: [0, 0, 0,
 //                       0, 1, 0,
 //                       1, 1, 0],
@@ -206,17 +212,19 @@ function webGLStart() {
                }
                else
                {
-                   vertices[i * 3] = 0;
-                   vertices[i * 3+ 1] = 0;
-                   vertices[i * 3+ 2] = 0;
+                  // vertices[i * 3] = 0;
+                  // vertices[i * 3+ 1] = 0;
+                  // vertices[i * 3+ 2] = 0;
                }
            });
 
        var uvMatrix = [];
+
+       var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
        $(surfacePoints).each(function (i)
            {
-               var u = (vertices[i*3] - minX) / (maxX - minX);
-               var v = (vertices[i*3 + 1] - minY) / (maxY - minY);
+               var u = Math.abs ((vertices[i*3] - minX) / maxDist);
+               var v = Math.abs ((vertices[i*3 + 1] - minY) / maxDist);
                uvMatrix[i] = [u, v];
            });
        surface.vertices = vertices;
@@ -283,23 +291,32 @@ function webGLStart() {
            return theuv;
            //return uvMatrix[index];
        };
-       var textCoords = new Float32Array(faces.length * 6);
+       var textCoords = new Float32Array(surfacePoints.length * 2);
        var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
-       for ( i = 0; i < faces.length; i++)
+       var factor = 1.0;
+       if (maxDist > 256)
+           factor = (maxDist / 256 * 64);
+
+       for (var i = 0; i < surfacePoints.length; i++)
        {
-           for (j = 0; j < 6; j++)
-               textCoords [i*6 + j] = iTexCoords[j];
-           
-           var uv = getUv(faces[i]);
-           textCoords[i*6] = uv[0]
-           textCoords[i*6 + 1] = uv[1];
-           //uv = getUv(faces[i][1]);
-           textCoords[i*6 + 2] = uv[2];
-           textCoords[i*6 + 3] = uv[3];
-           //uv = getUv(faces[i][2]);
-           textCoords[i*6 + 4] = uv[4];
-           textCoords[i*6 + 5] = uv[5];
+           textCoords[i*2] = uvMatrix [i][0] * factor;
+           textCoords[i*2 + 1] = uvMatrix [i][1] * factor;
        }
+       //for ( i = 0; i < faces.length; i++)
+       //{
+       //    for (j = 0; j < 6; j++)
+       //        textCoords [i*6 + j] = iTexCoords[j];
+       //    
+       //    var uv = getUv(faces[i]);
+       //    textCoords[i*6] = uv[0]
+       //    textCoords[i*6 + 1] = uv[1];
+       //    //uv = getUv(faces[i][1]);
+       //    textCoords[i*6 + 2] = uv[2];
+       //    textCoords[i*6 + 3] = uv[3];
+       //    //uv = getUv(faces[i][2]);
+       //    textCoords[i*6 + 4] = uv[4];
+       //    textCoords[i*6 + 5] = uv[5];
+       //}
 
        surface.texCoords = textCoords;
 
@@ -369,7 +386,7 @@ function webGLStart() {
            drawWorld(app);
        };
 
-       setInterval(draw, 1000/60);
+       //setInterval(draw, 1000/60);
 
        function driveWithSamplePoints(smpPts)
        {
