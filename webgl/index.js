@@ -12,6 +12,7 @@ function drawWorld (app)
     var program = app.program;
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
+    program.setTexture ('surface.png');
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -261,12 +262,20 @@ function webGLStart() {
            }
            
            var theuv = [];
+           var factor = 1.0;
+           var distX = Math.abs(MaxX - MinX);
+           var distY = Math.abs(MaxY - MinY);
+           var maxDist = Math.max (distX, distY);
+           var factor = 1.0;
+           if (maxDist > 256)
+               factor = maxDist / 256;
+           
            function compUv (index)
            {
-               var u = (pts[index][0] - MinX) / (MaxX - MinX);
-               var v = (pts[index][1] - MinY) / (MaxY - MinY);
-               theuv.push (u);
-               theuv.push (v);
+               var u = (pts[index][0] - MinX) / maxDist;
+               var v = (pts[index][1] - MinY) / maxDist;
+               theuv.push (u * factor);
+               theuv.push (v * factor);
            };
            compUv (0);
            compUv (1);
@@ -332,6 +341,13 @@ function webGLStart() {
                $("#alignmentlist").append($('<option></option>').val(name).html(name));
               });
 
+       function isXyInFace (face)
+       {
+       };
+
+       function findElevAtXY(x, y)
+       {
+       };
        $("#drive").click (function (e){
                var align = $(xmlDoc).find ('Alignment[name="' + $("#alignmentlist").val() +'"]');
                if (!align)
@@ -339,6 +355,9 @@ function webGLStart() {
                var align = handleAlignment (align);
                if (align["samplePoints"])
                {
+                   $.map (align["samplePoints"], function (v)
+                       {
+                       });
                    driveWithSamplePoints (align["samplePoints"]);
                }
            });
@@ -363,10 +382,11 @@ function webGLStart() {
                        if (curIndex < (smpPts.length - 1))
                        {
                            var nextPt = smpPts[curIndex + 1];
-                           var c = pointFromToDist (smpPts[curIndex], nextPt, 100);
-                           c.z = 75;
-                           smpPts[curIndex].z = 82 ;
-                           theCamera.view.lookAt (smpPts[curIndex], c, u);
+                           var c = pointFromToDist (smpPts[curIndex], nextPt, 20);
+                           var p = smpPts[curIndex].clone();
+                           c.z = p.z;
+                           p.z += 2;
+                           theCamera.view.lookAt (p, c, u);
                            drawWorld (app);
                            curIndex ++;
                        }
@@ -505,7 +525,7 @@ var tagHandler =  {Line: function(node)
     {
         var ptStart = PointFromStr($(node.find ("Start")[0]).text ());
         var ptEnd = PointFromStr($(node.find ("End")[0]).text ());
-        return getSamplePointsLine (ptStart, ptEnd, 2);
+        return getSamplePointsLine (ptStart, ptEnd, 1);
     },
     Curve : function (node)
     {
@@ -515,7 +535,7 @@ var tagHandler =  {Line: function(node)
         var radius = parseFloat (node.attr("radius"));
         var length = parseFloat (node.attr("length"));
         var bClockwise = node.attr("rot") == "cw";
-        return getSamplePointsCurve (ptStart, ptEnd, ptCenter, radius, length, bClockwise, 1.5);
+        return getSamplePointsCurve (ptStart, ptEnd, ptCenter, radius, length, bClockwise, 1);
     }
     };
 
@@ -523,23 +543,93 @@ function handleAlignment (align)
 {
     var ret = { name: align.attr("name") };
     var lSamplePoints = [];
-        $(align.find ("CoordGeom")[0]).children().each (function ()
+    var startStn = 0.0;
+    var endStn = 0.0;
+    var stnElvList = $.map (align.find ('ProfSurf').find ('PntList2D').text().split(' '), parseFloat);
+    if (stnElvList.length % 2 != 0) //station - elevation map
+        stnElvList = stnElvList.slice(0, startStn.length - 1);
+
+    function findZAtstation (stn)
+    {
+        var low = 0;
+        var high = stnElvList.length / 2;
+        var mid;
+        while (low < high)
+        {
+            mid = parseInt ((low + high) / 2);
+            if (stnElvList[mid * 2] < stn)
+                low = mid + 1;
+            else if (stnElvList[mid * 2] > stn)
+                high = mid - 1;
+                else 
+                    return stnElvList[mid * 2 + 1];
+        }
+        return stnElvList[mid * 2 + 1];
+    };
+
+    $(align.find ("CoordGeom")[0]).children().each (function ()
         {
             if(! tagHandler[this.tagName])
                 alert ("unsupported CoordGeom type" + this.tagName);
             else
             {
+                var length = parseFloat($(this).attr('length'));
+                endStn = startStn + length;
                 var smpPt = tagHandler[this.tagName]($(this));
                 if (lSamplePoints.length > 0 && smpPt.length > 0)
                 {
+                    smpPt[0].z = lSamplePoints[lSamplePoints.length - 1].z;
                     if (lSamplePoints[lSamplePoints.length - 1].distTo(smpPt[0]) == 0)
                     {
                         smpPt = smpPt.slice (1);
                     }
                 }
+                for (var i = 0; i < smpPt.length; i++, startStn += 1)
+                {
+                    if (startStn > endStn)
+                        startStn = endStn;
+                    smpPt[i].z = findZAtstation (startStn);
+                }
                 lSamplePoints = lSamplePoints.concat (smpPt);
+                startStn = endStn;
             }
         });
     ret ["samplePoints"] = lSamplePoints;
     return ret;
+}
+
+function isPointInTriangle (p, p1, p2, p3)
+{
+    var p = new PhiloGL.Vec3 (p[0], p[1], p[2]);
+    var a = new PhiloGL.Vec3 (p1[0], p1[1], p1[2]);
+    var b = new PhiloGL.Vec3 (p2[0], p2[1], p2[2]);
+    var c = new PhiloGL.Vec3 (p3[0], p3[1], p3[2]);
+    var v0 = c.sub(a);
+    var v1 = b.sub(a);
+    var v2 = p.sub(a);
+    var dot00 = v0.dot(v0);
+    var dot01 = v0.dot(v1);
+    var dot02 = v0.dot(v2);
+    var dot11 = v1.dot(v1);
+    var dot12 = v1.dot(v2);
+    var invDenom = 1/ (dot00 * dot11 - dot01 * dot01);
+    u = (dot11 * dot02 - dot01 * dot12) * invDenom
+    v = (dot00 * dot12 - dot01 * dot02) * invDenom
+
+    // Check if point is in triangle
+    if (((u > 0) && (v > 0) && (u + v < 1)) == false)
+    {
+        function multiply(p1, p2, p0)
+        {
+            var x = ((p1.x-p0.x)*(p2.y-p0.y)-(p2.x-p0.x)*(p1.y-p0.y));
+            return x;
+        };
+        function online (a, b, p)
+        {
+            var r = ((multiply (b, p, a) == 0) && ( ((p.x-a.x)*(p.x-b.x) <0   )||((p.y-a.y)*(p.y-b.y) <0   ))); 
+            return r;
+        };
+        return p.distTo(a) == 0|| p.distTo(b) == 0|| p.distTo(c) == 0 || online (a, b, p) || online (a, c, p) || online(b, c, p);
+    }
+    return true;
 }
