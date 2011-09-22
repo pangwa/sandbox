@@ -5,12 +5,42 @@ var theCamera;
 var phObj;
 var samplePoints = [];
 var surface;
+var corridor;
 var minX, maxX, minY, maxY;
+
+function myMin (x, x2)
+{
+    if (x == undefined)
+        return x2;
+    return Math.min (x, x2);
+}
+function myMax(x, x2)
+{
+    if (x == undefined)
+        return x2;
+    return Math.max(x, x2);
+}
+
 function drawWorld (app)
 {
     var gl = app.gl;
     var program = app.program;
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    program.setBuffers({
+            'aVertexPosition': {
+                value: surface.vertices,
+                size: 3
+            },
+            'aTextureCoord': {
+                value: surface.texCoords,
+                size: 2
+            },
+            "indices": {
+                value:surface.indices,
+                bufferType: gl.ELEMENT_ARRAY_BUFFER,
+                size: 1
+            }
+        });
     program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
     program.setTexture ('surface.png');
     //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_FILTER, gl.LINEAR)
@@ -36,6 +66,29 @@ function drawWorld (app)
     program.setUniform('uSampler', 0);
     gl.drawElements(gl.TRIANGLES, surface.indices.length, gl.UNSIGNED_SHORT, 0);
 
+    if (corridor)
+    {
+        program.setBuffers({
+                'aVertexPosition': {
+                    value: corridor.vertices,
+                    size: 3
+                },
+                'aTextureCoord': {
+                    value: corridor.texCoords,
+                    size: 2
+                },
+                "indices": {
+                    value: corridor.indices,
+                    bufferType: gl.ELEMENT_ARRAY_BUFFER,
+                    size: 1
+                }
+            });
+    program.setTexture ('road.png');
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    program.setUniform('uSampler', 0);
+    gl.drawElements(gl.TRIANGLES, corridor.indices.length, gl.UNSIGNED_SHORT, 0);
+    }
 };
 
 function webGLStart() {
@@ -134,7 +187,8 @@ function webGLStart() {
         }
     },
     textures:{
-        src: ["surface.png"]
+        src: ["surface.png",
+        "road.png"]
     },
     onError: function() {
       alert("An error ocurred while loading the application");
@@ -238,18 +292,6 @@ function webGLStart() {
 
        surface.indices = arrayTemp;
 
-       function myMin (x, x2)
-       {
-           if (x == undefined)
-               return x2;
-           return Math.min (x, x2);
-       }
-       function myMax(x, x2)
-       {
-           if (x == undefined)
-               return x2;
-           return Math.max(x, x2);
-       }
 
        function getUv (theface)
        {
@@ -321,23 +363,7 @@ function webGLStart() {
        surface.texCoords = textCoords;
 
        //set buffers with cube data
-     program.setBuffers({
-             'aVertexPosition': {
-                 value: surface.vertices,
-                 size: 3
-             },
-             'aTextureCoord': {
-                value: surface.texCoords,
-                size: 2
-             },
-             "indices": {
-                 value:surface.indices,
-                 bufferType: gl.ELEMENT_ARRAY_BUFFER,
-                 size: 1
-             }
-         });
-
-     surface.update ();
+       surface.update ();
      // camera.view.$translate(-4000, -4200, -6000);
      // theCamera.view.$rotateXYZ(90, 0, 0);
      // theCamera.view.$rotateXYZ(0, 0, 180);
@@ -401,8 +427,8 @@ function webGLStart() {
                            var nextPt = smpPts[curIndex + 1];
                            var c = pointFromToDist (smpPts[curIndex], nextPt, 20);
                            var p = smpPts[curIndex].clone();
-                           c.z = nextPt.z;
-                           p.z += 2;
+                           c.z = nextPt.z + 10;
+                           p.z += 15;
                            theCamera.view.lookAt (p, c, u);
                            drawWorld (app);
                            curIndex ++;
@@ -419,9 +445,13 @@ function webGLStart() {
                    to: smpPts.length - 2 
                });
 
-           setInterval(function() {
+           var it = setInterval(function() {
                    fx.step();
                }, 1000 / 60);
+           $("#stop").click (function (e){
+                   clearInterval (it);
+               });
+
        }
     },
      events: {
@@ -467,6 +497,13 @@ function pointFromToDist (ptStart, ptEnd, dist)
 
     var edge = ptEnd.sub(ptStart).unit ();
     var move = $.map(edge, function (x) {return x * dist;});
+    return ptStart.add (move);
+}
+
+function pointFromDirDist (ptStart, dir, dist)
+{
+    dir = dir.unit ();
+    var move = $.map(dir, function (x) {return x * dist;});
     return ptStart.add (move);
 }
 
@@ -556,8 +593,276 @@ var tagHandler =  {Line: function(node)
     }
     };
 
+    function TheLine (node, startStn)
+    {
+        this.node = node;
+        this.startStn = startStn;
+        this.endStn = startStn + parseFloat(node.attr('length'));
+        this.ptStart = PointFromStr($(node.find ("Start")[0]).text ());
+        this.ptEnd = PointFromStr($(node.find ("End")[0]).text ());
+        this.findXYAtOffset = function (pt, offset)
+        {
+            var dir = this.ptEnd.sub(this.ptStart);
+            var nDir = new PhiloGL.Vec3 (dir.y, - dir.x);
+            return pointFromDirDist (pt, nDir, offset);
+        };
+        this.findPtAtStn = function (stn)
+        {
+            if (stn < this.startStn || stn > this.endStn)
+                alert (false);
+            return pointFromToDist (this.ptStart, this.ptEnd, stn - this.startStn);
+        };
+    };
+
+    function TheCurve (node, startStn)
+    {
+        this.node = node;
+        this.startStn = startStn;
+        this.endStn = startStn + parseFloat(node.attr('length'));
+        this.ptCenter= PointFromStr($(node.find ("Center")[0]).text ());
+        this.ptStart = PointFromStr($(node.find ("Start")[0]).text ());
+        this.ptEnd = PointFromStr($(node.find ("End")[0]).text ());
+        this.radius = parseFloat (node.attr("radius"));
+        this.bClockwise = node.attr("rot") == "cw";
+
+        this.findXYAtOffset = function (pt, offset)
+        {
+            var nDir = this.ptCenter.sub(pt);
+            if (!this.bClockWise)
+                nDir = nDir.neg ();
+            return pointFromDirDist (pt, nDir, offset);
+        };
+        this.findPtAtStn = function (stn)
+        {
+            if (stn < this.startStn || stn > this.endStn)
+                alert (false);
+            var interval = stn - this.startStn;
+            var angle = interval / this.radius;
+            if (!this.bClockWise)
+                angle = -angle;
+
+            var ptStartNoOffset = this.ptStart.sub(this.ptCenter);
+            var ptCenter = this.ptCenter;
+
+            function ptByRotate (angle)
+            {
+                var cosp = Math.cos (angle);
+                var sinp = Math.sin (angle);
+                var newPt = ptStartNoOffset.clone();
+                newPt.x = ptStartNoOffset.x * cosp +  ptStartNoOffset.y * sinp;
+                newPt.y = ptStartNoOffset.y * cosp - ptStartNoOffset.x * sinp ;
+                return newPt.$add (ptCenter);
+            };
+
+            return ptByRotate(angle);
+        };
+    };
+
+    var segCreator = {
+        Line: function (node, startStn)
+        {
+            return new TheLine (node, startStn);
+        },
+        Curve: function (node, startStn)
+        {
+            return new TheCurve (node, startStn);
+        }
+    };
+
+    function Alignment (alignNode)
+    {
+        this.node = alignNode;
+        var stnElvList = $.map (this.node.find ('ProfSurf').find ('PntList2D').text().split(' '), parseFloat);
+        if (stnElvList.length % 2 != 0) //station - elevation map
+            stnElvList = stnElvList.slice(0, startStn.length - 1);
+
+        this.stnElvList = stnElvList;
+        var geomotries = [];
+
+        var startStn = 0.0;
+        $(this.node.find ("CoordGeom")[0]).children().each (function ()
+            {
+                if(! segCreator[this.tagName])
+                    alert ("unsupported CoordGeom type" + this.tagName);
+                else
+                {
+                    geomotries.push (segCreator[this.tagName] ($(this), startStn));
+                    startStn = geomotries[geomotries.length -1].endStn;
+                }
+            });
+        this.geomotries = geomotries;
+
+        this.findGeomAtStation = function(stn)
+        {
+            // should implment binary search here
+            var geo;
+            $(this.geomotries).each (function()
+                {
+                    if (this.startStn <= stn && this.endStn >= stn)
+                    {
+                        geo = this;
+                        return false;
+                    }
+                });
+            return geo;
+        }
+        this.findZAtstation = function (stn)
+        {
+            var stnElvList = this.stnElvList;
+            var low = 0;
+            var high = stnElvList.length / 2;
+            var mid;
+            while (low < high)
+            {
+                mid = parseInt ((low + high) / 2);
+                if (stnElvList[mid * 2] < stn)
+                    low = mid + 1;
+                else if (stnElvList[mid * 2] > stn)
+                high = mid - 1;
+                else 
+                    return stnElvList[mid * 2 + 1];
+            }
+            var nextIndex= mid + 1;
+            var prevIndex= mid;
+            if (stn < stnElvList[mid * 2])
+            {
+                if (mid > 0)
+                    prevIndex = mid - 1;
+                nextIndex = mid;
+            }
+
+            var elev = stnElvList[mid * 2 + 1];
+            if (prevIndex != nextIndex)
+            {
+                var totallength = stnElvList[nextIndex*2] - stnElvList[prevIndex * 2];
+                var prevElev = stnElvList[prevIndex*2 + 1];
+                var nextElev = stnElvList[nextIndex*2 + 1];
+                elev = (stn - stnElvList[prevIndex*2]) * nextElev / totallength + (stnElvList[nextIndex*2] - stn) * prevElev / totallength;
+            }
+            return elev;
+        };
+    };
+
+function buildCorridorFromAlign(alignEnt)
+{
+    var sections = [];
+    var minX, minY, maxX, maxY;
+    $(alignEnt.node.find ("CrossSects")).children().each (function ()
+    {
+        var station = parseFloat($(this).attr('sta'));
+        var ptZCenter = alignEnt.findZAtstation (station);
+        var seg = alignEnt.findGeomAtStation(station);
+        var pt = seg.findPtAtStn (station);
+        var secPoints = {}; //offset- elev
+        $(this).find("CrossSectPnt").each (function ()
+            {
+                var offsetAndElev = $.map($(this).text().split (' '), parseFloat);
+                if (secPoints[offsetAndElev[0]] == undefined)
+                    secPoints[offsetAndElev[0]] = offsetAndElev[1];
+                else
+                    secPoints[offsetAndElev[0]] = Math.max (secPoints[offsetAndElev[0]], offsetAndElev[1]);
+            });
+        var secPointsArray = [];
+        $.each(secPoints, function(v) {secPointsArray.push ({offset: parseFloat(v), 
+                        elev : secPoints[v]})
+            });
+        secPointsArray.sort (function(a, b) {
+                return  a.offset - b.offset;
+            });
+        $(secPointsArray).each (function (i) {
+                var ptOffset = seg.findXYAtOffset (pt, secPointsArray[i].offset);
+                ptOffset.z = secPointsArray[i].elev + ptZCenter;
+                secPointsArray[i].point = ptOffset;
+                minX = myMin (minX, ptOffset.x);
+                minY = myMin (minY, ptOffset.y);
+                maxX = myMin (maxX, ptOffset.x);
+                maxY = myMin (maxY, ptOffset.y);
+            });
+        sections.push (secPointsArray);
+    });
+
+    return buildCorridorModeFromSections({
+        minX : minX,
+        maxX : maxX,
+        minY : minY,
+        maxY : maxY,
+        sections: sections
+    });
+};
+
+function buildCorridorModeFromSections (info)
+{
+    var sections = info.sections;
+    var s1;
+    var s2;
+    var vertices = [];
+    var indices = [];
+    var texCoord = [];
+    var uvMatrix = [];
+
+    var minX = info.minX;
+    var maxX = info.maxX;
+    var minY = info.minY;
+    var maxY = info.maxY;
+    var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
+    var factor = 1.0;
+    if (maxDist > 256)
+        maxDist = maxDist / 256 * 64;
+    $(surfacePoints).each(function (i)
+        {
+        });
+
+    for (var i = 0; i < sections.length - 1; i++)
+    {
+        s1 = sections[i];
+        s2 = sections[i + 1];
+        if (s1.length != s2.length)
+            alert ('false');
+        for (var j = 0; j < s1.length - 1; j++)
+        {
+            var p1 = s1[j].point;
+            var p2 = s1[j + 1].point;
+            var p3 = s2[j].point;
+            var p4 = s2[j + 1].point;
+            //
+            //  s2[j]     s2[j+1]
+            //  
+            //  s1[j]     s1[j+1]
+            //
+            var vts = [p1.x, p1.y,  p1.z, 
+                       p2.x, p2.y,  p2.z,
+                       p3.x, p3.y,  p3.z,
+                       p4.x, p4.y,  p4.z];
+            var  tc = [];
+            for (var n = 0; n < 4; n++)
+            {
+                var u = Math.abs ((vertices[n*3] - minX) / maxDist) * factor;
+                var v = Math.abs ((vertices[n*3 + 1] - minY) / maxDist) * factor;
+                tc[n*2] = u;
+                tc[n*2 + 1] = v;
+            }
+            texCoord = texCoord.concat (tc);
+            vertices = vertices.concat (vts);
+            var i1 = vertices.length / 3 - 4;
+            var i2 = i1 + 1;
+            var i3 = i1 + 2;
+            var i4 = i1 + 3;
+            indices = indices.concat ([i1, i2, i3, i2, i3, i4])
+        }
+    }
+
+corridor = new PhiloGL.O3D.Model({
+            texture: "road.png",
+            vertices: vertices,
+            texCoords: texCoord,
+            indices: indices });
+}
+
 function handleAlignment (align)
 {
+    var alignEnt = new Alignment (align);
+    if (corridor == undefined)
+        buildCorridorFromAlign (alignEnt);
     var ret = { name: align.attr("name") };
     var lSamplePoints = [];
     var startStn = 0.0;
@@ -666,4 +971,15 @@ function isPointInTriangle (p, p1, p2, p3)
         return p.distTo(a) == 0|| p.distTo(b) == 0|| p.distTo(c) == 0 || online (a, b, p) || online (a, c, p) || online(b, c, p);
     }
     return true;
+}
+
+function buildCorridor (align)
+{
+    align.find ("CrossSects").children().each (function()
+        {
+            if (this.tagName != "CrossSect")
+            {
+
+            }
+        });
 }
