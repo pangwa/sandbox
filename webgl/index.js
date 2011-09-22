@@ -87,7 +87,11 @@ function drawWorld (app)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
     program.setUniform('uSampler', 0);
+    //gl.enable(gl.CULL_FACE);
+    //gl.cullFace (gl.FRONT_AND_BACK);
     gl.drawElements(gl.TRIANGLES, corridor.indices.length, gl.UNSIGNED_SHORT, 0);
+    //gl.flush();
+    //gl.disable(gl.CULL_FACE);
     }
 };
 
@@ -197,7 +201,7 @@ function webGLStart() {
       var gl = app.gl,
           canvas = app.canvas,
           program = app.program;
-          app.camera = new PhiloGL.Camera (45, 1, 0.0001, 5000 );
+          app.camera = new PhiloGL.Camera (45, 1, 0.01, 1000 );
           view = new PhiloGL.Mat4;
           camera = app.camera;
           theCamera = app.camera;
@@ -205,8 +209,8 @@ function webGLStart() {
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 1);
       gl.clearDepth(1);
-      gl.enable(gl.DEPTH_TEST);
-      gl.depthFunc(gl.LEQUAL);
+      //gl.enable(gl.DEPTH_TEST);
+      //gl.depthFunc(gl.ALWAYS);
 
       //program.setBuffers({
       //  'triangle': {
@@ -293,51 +297,11 @@ function webGLStart() {
        surface.indices = arrayTemp;
 
 
-       function getUv (theface)
-       {
-           var MinX, MinY, MaxX, MaxY;
-           var pts = [];
-           var ptStart;
-           for (var i = 0; i < 3; i++)
-           {
-               ptStart = theface[i] * 3; 
-               pts.push ([vertices[ptStart], vertices[ptStart + 1], vertices[ptStart + 2]]);
-           }
-           for (var i = 0; i < 3; i++)
-           {
-               MinX = myMin (MinX, pts[i][0]);
-               MaxX = myMax (MaxX, pts[i][0]);
-               MinY = myMin(MinY, pts[i][1]);
-               MaxY = myMax(MinY, pts[i][1]);
-           }
-           
-           var theuv = [];
-           var factor = 1.0;
-           var distX = Math.abs(MaxX - MinX);
-           var distY = Math.abs(MaxY - MinY);
-           var maxDist = Math.max (distX, distY);
-           var factor = 1.0;
-           if (maxDist > 256)
-               factor = maxDist / 256;
-           
-           function compUv (index)
-           {
-               var u = (pts[index][0] - MinX) / maxDist;
-               var v = (pts[index][1] - MinY) / maxDist;
-               theuv.push (u * factor);
-               theuv.push (v * factor);
-           };
-           compUv (0);
-           compUv (1);
-           compUv (2);
-           return theuv;
-           //return uvMatrix[index];
-       };
        var textCoords = new Float32Array(surfacePoints.length * 2);
        var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
        var factor = 1.0;
        if (maxDist > 256)
-           factor = (maxDist / 256 * 64);
+           factor = (maxDist / 256* 64);
 
        for (var i = 0; i < surfacePoints.length; i++)
        {
@@ -398,9 +362,9 @@ function webGLStart() {
                var align = handleAlignment (align);
                if (align["samplePoints"])
                {
-                   $.map (align["samplePoints"], function (v)
-                       {
-                       });
+                   //$.map (align["samplePoints"], function (v)
+                   //    {
+                   //    });
                    driveWithSamplePoints (align["samplePoints"]);
                }
            });
@@ -414,13 +378,35 @@ function webGLStart() {
 
        //setInterval(draw, 1000/60);
 
+       var it;
+       var dimFx;
+       $("#stop").click (function (e){
+               if ($('#stop').val() != 'resume')
+               {
+                   clearInterval (it);
+                   $("#stop").val ('resume');
+                   $("#stop").text ('resume');
+               }
+               else
+               {
+                   it = setInterval(function() {
+                           dimFx.step();
+                       }, 1000 / 60);
+
+                   $("#stop").val('pause');
+                   $("#stop").text ('pause');
+               }
+           });
+
+       //setInterval(function() {drawWorld(app);}, 1000/60);
+
        function driveWithSamplePoints(smpPts)
        {
            var curIndex = 0;
            //create a Fx instance
-           var fx = new PhiloGL.Fx({
+           dimFx = new PhiloGL.Fx({
                    duration: smpPts.length /60 * 1000,
-                   transition: PhiloGL.Fx.Transition.Back.easeOut,
+                   transition: PhiloGL.Fx.Transition.linear,
                    onCompute: function(delta) {
                        if (curIndex < (smpPts.length - 1))
                        {
@@ -436,22 +422,21 @@ function webGLStart() {
                    },
                    onComplete: function() {
                        // do the annomation
+                       clearInterval (it);
                    }
                });
 
            //start the animation with custom `from` and `to` properties.
-           fx.start({
+           dimFx.start({
                    from: 0,
                    to: smpPts.length - 2 
                });
 
-           var it = setInterval(function() {
-                   fx.step();
+           $("#stop").val('pause');
+           $("#stop").text ('pause');
+           it = setInterval(function() {
+                   dimFx.step();
                }, 1000 / 60);
-           $("#stop").click (function (e){
-                   clearInterval (it);
-               });
-
        }
     },
      events: {
@@ -775,8 +760,8 @@ function buildCorridorFromAlign(alignEnt)
                 secPointsArray[i].point = ptOffset;
                 minX = myMin (minX, ptOffset.x);
                 minY = myMin (minY, ptOffset.y);
-                maxX = myMin (maxX, ptOffset.x);
-                maxY = myMin (maxY, ptOffset.y);
+                maxX = myMax (maxX, ptOffset.x);
+                maxY = myMax (maxY, ptOffset.y);
             });
         sections.push (secPointsArray);
     });
@@ -807,10 +792,7 @@ function buildCorridorModeFromSections (info)
     var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
     var factor = 1.0;
     if (maxDist > 256)
-        maxDist = maxDist / 256 * 64;
-    $(surfacePoints).each(function (i)
-        {
-        });
+        factor = maxDist / 256 * 64;
 
     for (var i = 0; i < sections.length - 1; i++)
     {
