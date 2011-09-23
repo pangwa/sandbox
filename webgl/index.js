@@ -151,11 +151,13 @@ function webGLStart() {
 
         });
    PhiloGL('lesson01-canvas', {
-    program: {
+    program: [{
+        id: "default",
       from: 'ids',
       vs: 'shader-vs',
       fs: 'shader-fs'
-    },
+    }
+        ],
     camera: {
         position: {
             x: 0, y: 0, z: -7
