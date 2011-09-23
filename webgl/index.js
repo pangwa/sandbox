@@ -69,93 +69,64 @@ function drawWorld (app)
 function webGLStart() {
     surface = new PhiloGL.O3D.Model({
             textures: ["7.jpg"],
-
-    vertices: [-1, -1, 1,
-                1, -1, 1,
-                1, 1, 1,
-               -1, 1, 1,
-
-               -1, -1, -1,
-               -1, 1, -1,
-                1, 1, -1,
-                1, -1, -1,
-
-               -1, 1, -1,
-               -1, 1, 1,
-                1, 1, 1,
-                1, 1, -1,
-
-               -1, -1, -1,
-                1, -1, -1,
-                1, -1, 1,
-               -1, -1, 1,
-
-                1, -1, -1,
-                1, 1, -1,
-                1, 1, 1,
-                1, -1, 1,
-
-               -1, -1, -1,
-               -1, -1, 1,
-               -1, 1, 1,
-               -1, 1, -1],
-//            vertices: [0, 0, 0,
-//                       0, 1, 0,
-//                       1, 1, 0],
-//            indices: [0, 1, 2]
-
- texCoords: [
-            // Front face
-            0.0, 0.0,
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0,
-
-            // Back face
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0,
-            0.0, 0.0,
-
-            // Top face
-            0.0, 1.0,
-            0.0, 0.0,
-            1.0, 0.0,
-            1.0, 1.0,
-
-            // Bottom face
-            1.0, 1.0,
-            0.0, 1.0,
-            0.0, 0.0,
-            1.0, 0.0,
-
-            // Right face
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0,
-            0.0, 0.0,
-
-            // Left face
-            0.0, 0.0,
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0
-    ],
-
- indices: [0, 1, 2, 0, 2, 3,
-              4, 5, 6, 4, 6, 7,
-              8, 9, 10, 8, 10, 11,
-              12, 13, 14, 12, 14, 15,
-              16, 17, 18, 16, 18, 19,
-              20, 21, 22, 20, 22, 23]
-
+     program: "default",
+ render: function(gl, program, camera)
+              {    
+                  program.setBuffers({
+                          'aVertexPosition': {
+                              value: this.vertices,
+                              size: 3
+                          },
+                          'aTextureCoord': {
+                              value: this.texCoords,
+                              size: 2
+                          },
+                          "indices": {
+                              value:this.indices,
+                              bufferType: gl.ELEMENT_ARRAY_BUFFER,
+                              size: 1
+                          }
+                      });
+                  program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
+                  program.setTexture (this.textures[0]);
+                  // set to repeating mode
+                  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+                  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+                  view = theCamera.view;
+                  program.setUniform('uMVMatrix', view);
+                  program.setUniform('uPMatrix', theCamera.projection);
+                  program.setUniform('uSampler', 0);
+                  gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
+              }
         });
+
+      
+  //Get Model
+  new PhiloGL.IO.XHR({
+    url: 'Teapot.json',
+    onSuccess: function(text) {
+      var json = JSON.parse(text);
+      json.colors = [1, 1, 1, 1];
+      json.textures = 'arroway.de_metal+structure+06_d100_flat.jpg';
+      var teapot = new PhiloGL.O3D.Model(json);
+      teapot.program = "3d";
+      animateObject(teapot);
+    }
+  }).send();
+
+function animateObject(teapot) {
    PhiloGL('lesson01-canvas', {
     program: [{
         id: "default",
       from: 'ids',
       vs: 'shader-vs',
       fs: 'shader-fs'
+    },
+    {
+        id: "3d",
+        from: 'uris',
+        vs: 'frag-lighting.vs.glsl',
+        fs: 'frag-lighting.fs.glsl'
     }
         ],
     camera: {
@@ -164,8 +135,16 @@ function webGLStart() {
         }
     },
     textures:{
-        src: ["7.jpg",
-        "road.png"]
+        src: ['arroway.de_metal+structure+06_d100_flat.jpg', "7.jpg",
+        "road.png"],
+        parameters: [{
+          name: 'TEXTURE_MAG_FILTER',
+          value: 'LINEAR'
+        }, {
+          name: 'TEXTURE_MIN_FILTER',
+          value: 'LINEAR_MIPMAP_NEAREST',
+          generateMipmap: true
+        }]
     },
     onError: function() {
       alert("An error ocurred while loading the application");
@@ -182,8 +161,8 @@ function webGLStart() {
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 1);
       gl.clearDepth(1);
-      //gl.enable(gl.DEPTH_TEST);
-      //gl.depthFunc(gl.ALWAYS);
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
 
       //program.setBuffers({
       //  'triangle': {
@@ -301,6 +280,9 @@ function webGLStart() {
 
        //set buffers with cube data
        surface.update ();
+       app.scene.add (surface);
+       teapot.update ();
+       app.scene.add (teapot);
      // camera.view.$translate(-4000, -4200, -6000);
      // theCamera.view.$rotateXYZ(90, 0, 0);
      // theCamera.view.$rotateXYZ(0, 0, 180);
@@ -338,12 +320,23 @@ function webGLStart() {
                    //$.map (align["samplePoints"], function (v)
                    //    {
                    //    });
+                if (align["corridor"])
+                    app.scene.add (align["corridor"]);
                    driveWithSamplePoints (align["samplePoints"]);
                }
            });
        camera.view.lookAt (p, c, u);
        var curIndex = 0;
-       drawWorld (app);
+       //drawWorld (app);
+       app.scene.camera = theCamera;
+       teapot.scale = new PhiloGL.Vec3(.05, .05, .05);
+       teapot.rotation= new PhiloGL.Vec3(90, 0, 45);
+       teapot.position = theCamera.target;
+       teapot.update ();
+       app.scene.camera.position = [0, 0, -50];
+       app.scene.camera.target = [0, 0, 0];
+       app.scene.camera.update ();
+       app.scene.render ();
        function draw()
        {
            drawWorld(app);
@@ -377,13 +370,13 @@ function webGLStart() {
        //setInterval(function() {drawWorld(app);}, 1000/60);
        function updateLogs ()
        {
-           function ptToStr(pt)
-           {
-               return "x="+ pt.x.toFixed(2) + " y=" + pt.y.toFixed(2) + " z=" + pt.z.toFixed(2);
-           }
-           var logs = "Camera pos: "  + ptToStr(theCamera.position) + "<p/>";
-           logs += "Camera target: "  + ptToStr(theCamera.target) + "<p/>";
-           $("#logs").html(logs);
+          // function ptToStr(pt)
+          // {
+          //     return "x="+ pt.x.toFixed(2) + " y=" + pt.y.toFixed(2) + " z=" + pt.z.toFixed(2);
+          // }
+          // var logs = "Camera pos: "  + ptToStr(theCamera.position) + "<p/>";
+          // logs += "Camera target: "  + ptToStr(theCamera.target) + "<p/>";
+          // $("#logs").html(logs);
        } 
 
        function driveWithSamplePoints(smpPts)
@@ -410,8 +403,15 @@ function webGLStart() {
                            theCamera.up = u;
                            theCamera.target = c;
                            theCamera.update ();
+                           teapot.position = theCamera.target.clone ();
+                           teapot.position.z += 4.0;
+                           //teapot.scale = [10.1, 10.1, 20.1];
+                           //teapot.scale = [0.01, 0.01, 0.01];
+                           teapot.update();
                            //theCamera.view.lookAt (p, c, u);
-                           drawWorld (app);
+                           gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                           app.scene.render ();
+                           //drawWorld (app);
                            curIndex ++;
                        }
                    },
@@ -454,20 +454,23 @@ function webGLStart() {
              //console.log (e.x - pos.x, " , ", e.y - pos.y);
              pos.x = e.x;
              pos.y = e.y;
-             drawWorld (this);
+             app.scene.render ();
+             //drawWorld (this);
              //camera.update ();
          },
 
          onMouseWheel: function(e) {
              e.stop();
-             var camera = this.camera;
+             var camera = app.scene.camera;
              //camera.position.z += e.wheel;
-             camera.view.$translate(0, 0, e.wheel * 50);
+             camera.view.$translate(0, 0, wheel * 50);
+             app.scene.render ();
              //console.log (camera.position.x, ", ", camera.position.y);
              //camera.update();
          }
      }
   });  
+}
 }
 
 function pointFromToDist (ptStart, ptEnd, dist)
@@ -757,7 +760,7 @@ function buildCorridorFromAlign(alignEnt)
             });
         $(secPointsArray).each (function (i) {
                 var ptOffset = seg.findXYAtOffset (pt, secPointsArray[i].offset);
-                ptOffset.z = secPointsArray[i].elev + ptZCenter;
+                ptOffset.z = secPointsArray[i].elev + ptZCenter + 5;
                 secPointsArray[i].point = ptOffset;
                 minX = myMin (minX, ptOffset.x);
                 minY = myMin (minY, ptOffset.y);
@@ -842,14 +845,46 @@ corridor = new PhiloGL.O3D.Model({
             textures: ["road.png"],
             vertices: vertices,
             texCoords: texCoord,
-            indices: indices });
+            indices: indices,
+            program: "default",
+            render: function(gl, program, camera)
+            {
+                program.setBuffers({
+                        'aVertexPosition': {
+                            value: this.vertices,
+                            size: 3
+                        },
+                        'aTextureCoord': {
+                            value: this.texCoords,
+                            size: 2
+                        },
+                        "indices": {
+                            value:this.indices,
+                            bufferType: gl.ELEMENT_ARRAY_BUFFER,
+                            size: 1
+                        }
+                    });
+                program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
+                program.setTexture (this.textures[0]);
+                // set to repeating mode
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+                view = camera.view;
+                program.setUniform('uMVMatrix', view);
+                program.setUniform('uPMatrix', camera.projection);
+                program.setUniform('uSampler', 0);
+                gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
+            }});
 }
 
 function handleAlignment (align)
 {
     var alignEnt = new Alignment (align);
+    var theCorridor;
     if (corridor == undefined)
-        buildCorridorFromAlign (alignEnt);
+    {
+        theCorridor = buildCorridorFromAlign (alignEnt);
+    }
     var ret = { name: align.attr("name") };
     var lSamplePoints = [];
     var startStn = 0.0;
@@ -921,6 +956,7 @@ function handleAlignment (align)
             }
         });
     ret ["samplePoints"] = lSamplePoints;
+    ret ["corridor"] = corridor;
     return ret;
 }
 
@@ -970,3 +1006,4 @@ function buildCorridor (align)
             }
         });
 }
+
