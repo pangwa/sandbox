@@ -8,6 +8,37 @@ var surface;
 var corridor;
 var minX, maxX, minY, maxY;
 
+PhiloGL.O3D.Model.prototype.worldDraw = function (app)
+{
+    var gl = app.gl;
+    var program = app.program;
+    program.setBuffers({
+            'aVertexPosition': {
+                value: this.vertices,
+                size: 3
+            },
+            'aTextureCoord': {
+                value: this.texCoords,
+                size: 2
+            },
+            "indices": {
+                value:this.indices,
+                bufferType: gl.ELEMENT_ARRAY_BUFFER,
+                size: 1
+            }
+        });
+    program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
+    program.setTexture (this.textures[0]);
+    // set to repeating mode
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    view = theCamera.view;
+    program.setUniform('uMVMatrix', view);
+    program.setUniform('uPMatrix', theCamera.projection);
+    program.setUniform('uSampler', 0);
+    gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
+};
+
 function myMin (x, x2)
 {
     if (x == undefined)
@@ -26,78 +57,18 @@ function drawWorld (app)
     var gl = app.gl;
     var program = app.program;
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    program.setBuffers({
-            'aVertexPosition': {
-                value: surface.vertices,
-                size: 3
-            },
-            'aTextureCoord': {
-                value: surface.texCoords,
-                size: 2
-            },
-            "indices": {
-                value:surface.indices,
-                bufferType: gl.ELEMENT_ARRAY_BUFFER,
-                size: 1
-            }
-        });
-    program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
-    program.setTexture ('surface.png');
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_FILTER, gl.LINEAR)
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-    // set to repeating mode
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    //program.setBuffer("surfaces");
-    //program.setTexture ('surface.png');
-    //y += 5;
-    //surface.position.set(0, y, 0);
-    //surface.rotation.set (rCube, rCube, rCube);
-    //surface.update ();
-    //view.mulMat42 (theCamera.view, surface.matrix);
-    view = theCamera.view;
-    program.setUniform('uMVMatrix', view);
-    program.setUniform('uPMatrix', theCamera.projection);
-    program.setUniform('uSampler', 0);
-    gl.drawElements(gl.TRIANGLES, surface.indices.length, gl.UNSIGNED_SHORT, 0);
+    surface.worldDraw (app);
 
     if (corridor)
     {
-        program.setBuffers({
-                'aVertexPosition': {
-                    value: corridor.vertices,
-                    size: 3
-                },
-                'aTextureCoord': {
-                    value: corridor.texCoords,
-                    size: 2
-                },
-                "indices": {
-                    value: corridor.indices,
-                    bufferType: gl.ELEMENT_ARRAY_BUFFER,
-                    size: 1
-                }
-            });
-    program.setTexture ('road.png');
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    program.setUniform('uSampler', 0);
-    //gl.enable(gl.CULL_FACE);
-    //gl.cullFace (gl.FRONT_AND_BACK);
-    gl.drawElements(gl.TRIANGLES, corridor.indices.length, gl.UNSIGNED_SHORT, 0);
-    //gl.flush();
-    //gl.disable(gl.CULL_FACE);
+        corridor.worldDraw (app);
     }
 };
 
 function webGLStart() {
     surface = new PhiloGL.O3D.Model({
-            texture: "surface.png",
+            textures: ["7.jpg"],
 
     vertices: [-1, -1, 1,
                 1, -1, 1,
@@ -191,7 +162,7 @@ function webGLStart() {
         }
     },
     textures:{
-        src: ["surface.png",
+        src: ["7.jpg",
         "road.png"]
     },
     onError: function() {
@@ -301,7 +272,7 @@ function webGLStart() {
        var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
        var factor = 1.0;
        if (maxDist > 256)
-           factor = (maxDist / 256* 64);
+           factor = (maxDist / 256* 8);
 
        for (var i = 0; i < surfacePoints.length; i++)
        {
@@ -376,32 +347,50 @@ function webGLStart() {
            drawWorld(app);
        };
 
+       updateLogs();
        //setInterval(draw, 1000/60);
 
+       setInterval (updateLogs, 1000/3);
        var it;
        var dimFx;
        $("#stop").click (function (e){
-               if ($('#stop').val() != 'resume')
+              // if ($('#stop').val() != 'resume')
                {
                    clearInterval (it);
-                   $("#stop").val ('resume');
-                   $("#stop").text ('resume');
+              //     $("#stop").val ('resume');
+              //     $("#stop").text ('resume');
+                   it = undefined;
                }
-               else
-               {
-                   it = setInterval(function() {
-                           dimFx.step();
-                       }, 1000 / 60);
+              // else
+              // {
+              //     jjit = setInterval(function() {
+              //             dimFx.step();
+              //         }, 1000 / 60);
 
-                   $("#stop").val('pause');
-                   $("#stop").text ('pause');
-               }
+              //     $("#stop").val('stop');
+              //     $("#stop").text ('stop');
+              // }
            });
 
        //setInterval(function() {drawWorld(app);}, 1000/60);
+       function updateLogs ()
+       {
+           function ptToStr(pt)
+           {
+               return "x="+ pt.x.toFixed(2) + " y=" + pt.y.toFixed(2) + " z=" + pt.z.toFixed(2);
+           }
+           var logs = "Camera pos: "  + ptToStr(theCamera.position) + "<p/>";
+           logs += "Camera target: "  + ptToStr(theCamera.target) + "<p/>";
+           $("#logs").html(logs);
+       } 
 
        function driveWithSamplePoints(smpPts)
        {
+           if (it)
+           {
+               clearInterval (it);
+               it = undefined;
+           }
            var curIndex = 0;
            //create a Fx instance
            dimFx = new PhiloGL.Fx({
@@ -415,7 +404,11 @@ function webGLStart() {
                            var p = smpPts[curIndex].clone();
                            c.z = nextPt.z + 10;
                            p.z += 15;
-                           theCamera.view.lookAt (p, c, u);
+                           theCamera.position = p;
+                           theCamera.up = u;
+                           theCamera.target = c;
+                           theCamera.update ();
+                           //theCamera.view.lookAt (p, c, u);
                            drawWorld (app);
                            curIndex ++;
                        }
@@ -432,8 +425,8 @@ function webGLStart() {
                    to: smpPts.length - 2 
                });
 
-           $("#stop").val('pause');
-           $("#stop").text ('pause');
+           $("#stop").val('stop');
+           $("#stop").text ('stop');
            it = setInterval(function() {
                    dimFx.step();
                }, 1000 / 60);
@@ -450,8 +443,9 @@ function webGLStart() {
              camera = this.camera;
              //camera.position.x = pos.x - e.x;
              //camera.position.y = pos.y - e.y;
-             //camera.target.x = camera.position.x;
-             //camera.target.y = camera.position.y;
+             //camera.target.x += e.x - pos.x;
+             //camera.target.y += e.y - pos.y;
+             //camera.update ();
              //camera.position.y += pos.y - e.y;
              camera.view.$translate((e.x - pos.x), e.y - pos.y, 0);
              //console.log (camera.position.x, ", ", camera.position.y);
@@ -613,7 +607,7 @@ var tagHandler =  {Line: function(node)
         this.findXYAtOffset = function (pt, offset)
         {
             var nDir = this.ptCenter.sub(pt);
-            if (!this.bClockWise)
+            if (!this.bClockwise)
                 nDir = nDir.neg ();
             return pointFromDirDist (pt, nDir, offset);
         };
@@ -623,7 +617,7 @@ var tagHandler =  {Line: function(node)
                 alert (false);
             var interval = stn - this.startStn;
             var angle = interval / this.radius;
-            if (!this.bClockWise)
+            if (!this.bClockwise)
                 angle = -angle;
 
             var ptStartNoOffset = this.ptStart.sub(this.ptCenter);
@@ -643,16 +637,21 @@ var tagHandler =  {Line: function(node)
         };
     };
 
-    var segCreator = {
-        Line: function (node, startStn)
-        {
-            return new TheLine (node, startStn);
-        },
-        Curve: function (node, startStn)
-        {
-            return new TheCurve (node, startStn);
+    //
+    // construct the object with all arguments passed
+    //
+    function construct(constructor) {
+        function F(args) {
+            return constructor.apply(this, args);
         }
-    };
+        F.prototype = constructor.prototype;
+        return new F([].slice.call(arguments, 1));
+    }
+
+   var segCreator = {
+       Line: construct.bind(null, TheLine),
+       Curve: construct.bind (null, TheCurve)
+   };
 
     function Alignment (alignNode)
     {
@@ -799,7 +798,11 @@ function buildCorridorModeFromSections (info)
         s1 = sections[i];
         s2 = sections[i + 1];
         if (s1.length != s2.length)
+        {
             alert ('false');
+            continue;
+        }
+
         for (var j = 0; j < s1.length - 1; j++)
         {
             var p1 = s1[j].point;
@@ -834,7 +837,7 @@ function buildCorridorModeFromSections (info)
     }
 
 corridor = new PhiloGL.O3D.Model({
-            texture: "road.png",
+            textures: ["road.png"],
             vertices: vertices,
             texCoords: texCoord,
             indices: indices });
