@@ -404,7 +404,7 @@ function animateObject(teapot) {
                            theCamera.target = c;
                            theCamera.update ();
                            teapot.position = theCamera.target.clone ();
-                           teapot.position.z += 4.0;
+                           teapot.position.z += 2.0;
                            //teapot.scale = [10.1, 10.1, 20.1];
                            //teapot.scale = [0.01, 0.01, 0.01];
                            teapot.update();
@@ -760,7 +760,7 @@ function buildCorridorFromAlign(alignEnt)
             });
         $(secPointsArray).each (function (i) {
                 var ptOffset = seg.findXYAtOffset (pt, secPointsArray[i].offset);
-                ptOffset.z = secPointsArray[i].elev + ptZCenter + 5;
+                ptOffset.z = secPointsArray[i].elev + ptZCenter + 3;
                 secPointsArray[i].point = ptOffset;
                 minX = myMin (minX, ptOffset.x);
                 minY = myMin (minY, ptOffset.y);
