@@ -7,6 +7,7 @@ var samplePoints = [];
 var surface;
 var corridor;
 var minX, maxX, minY, maxY;
+var treeModel;
 
 PhiloGL.O3D.Model.prototype.worldDraw = function (app)
 {
@@ -107,7 +108,7 @@ function webGLStart() {
     onSuccess: function(text) {
       var json = JSON.parse(text);
       json.colors = [1, 1, 1, 1];
-      json.textures = 'arroway.de_metal+structure+06_d100_flat.jpg';
+     // json.textures = 'arroway.de_metal+structure+06_d100_flat.jpg';
       var teapot = new PhiloGL.O3D.Model(json);
       teapot.program = "3d";
       animateObject(teapot);
@@ -164,6 +165,24 @@ function animateObject(teapot) {
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LEQUAL);
 
+      $("#loadTree").click (function (e){
+              new PhiloGL.IO.XHR({
+                      url: 'data/palmtree.dae',
+                      onSuccess: function(text) {
+                          var xmlDoc = $.parseXML(text);
+                          var geometries = new PhiloGL.IO.Collada_loader().parse (xmlDoc);
+                          $(geometries).each (function(){
+
+                                  app.scene.add (this);
+                              });
+
+                          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                          app.scene.render ();
+                          //new 
+                      }
+                  }).send();
+          });
+
       //program.setBuffers({
       //  'triangle': {
       //    attribute: 'aVertexPosition',
@@ -187,7 +206,7 @@ function animateObject(teapot) {
       var xmlDoc = $.parseXML($("#surface").html());
       $(xmlDoc).find('P').each (function()
               {
-                  var id = parseInt($(this).attr("id"));
+                  var id = parseInt($(this).attr("id"), 10);
                   var pt = $.map($(this).text().split(" "), parseFloat);
                   if (pt.length != 3)
                       console.log ('error');
@@ -200,7 +219,7 @@ function animateObject(teapot) {
                {
                    var pts = $.map($(this).text().split(' '), function(idx)
                        {
-                           return parseInt (idx);
+                           return parseInt (idx, 10);
                        });
                    faces.push (pts);
                }
@@ -366,6 +385,12 @@ function animateObject(teapot) {
               //     $("#stop").text ('stop');
               // }
            });
+
+       var handleDaeData = function (data)
+       {
+           console.log (data);
+       }
+
 
        //setInterval(function() {drawWorld(app);}, 1000/60);
        function updateLogs ()
@@ -703,7 +728,7 @@ var tagHandler =  {Line: function(node)
             var mid;
             while (low < high)
             {
-                mid = parseInt ((low + high) / 2);
+                mid = parseInt ((low + high) / 2, 10);
                 if (stnElvList[mid * 2] < stn)
                     low = mid + 1;
                 else if (stnElvList[mid * 2] > stn)
@@ -900,7 +925,7 @@ function handleAlignment (align)
         var mid;
         while (low < high)
         {
-            mid = parseInt ((low + high) / 2);
+            mid = parseInt ((low + high) / 2, 10);
             if (stnElvList[mid * 2] < stn)
                 low = mid + 1;
             else if (stnElvList[mid * 2] > stn)
@@ -1007,3 +1032,4 @@ function buildCorridor (align)
         });
 }
 
+                           
