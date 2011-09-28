@@ -13,12 +13,23 @@ PhiloGL.IO.Collada_loader = function ()
                     {
                         var subPart = new PhiloGL.O3D.Model(this);
                         subPart.program = "3d";
-                        subPart.scale = new PhiloGL.Vec3(.05, .05, .05);
+                        subPart.scale = new PhiloGL.Vec3(.01, .01, .01);
                         subPart.colors = [1, 1, 1, 1];
                         subPart.update();
                         geometries.push (subPart);
                     });
             });
+        var modelHolder = new PhiloGL.O3D.Model ();
+        modelHolder.program = "3d";
+        modelHolder.submodles = geometries;
+        modelHolder.isproxy = true;
+        modelHolder.render = function (gl, program, camera, scene)
+        {
+            $(this.submodles).each ( function()
+                {
+                    scene.renderObject(this, program);
+                });
+        };
         return geometries;
     };
 

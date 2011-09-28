@@ -4420,7 +4420,7 @@ $.splat = (function() {
       //Draw
       //TODO(nico): move this into O3D, but, somehow, abstract the gl.draw* methods inside that object.
       if (obj.render) {
-        obj.render(gl, program, camera);
+        obj.render(gl, program, camera, this);
       } else {
         if (obj.indices) {
           gl.drawElements((obj.drawType !== undefined) ? gl.get(obj.drawType) : gl.TRIANGLES, obj.indices.length, gl.UNSIGNED_SHORT, 0);

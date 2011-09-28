@@ -171,8 +171,8 @@ function animateObject(teapot) {
                       onSuccess: function(text) {
                           var xmlDoc = $.parseXML(text);
                           var geometries = new PhiloGL.IO.Collada_loader().parse (xmlDoc);
+                          //app.scene.add (geometries);
                           $(geometries).each (function(){
-
                                   app.scene.add (this);
                               });
 
