@@ -1,6 +1,7 @@
 PhiloGL.IO.Collada_loader = function ()
 {
     this.pointarrays = {};
+    this.loadedtextures = {};
 
     this.parse = function (xmlDoc, callback)
     {
@@ -11,26 +12,41 @@ PhiloGL.IO.Collada_loader = function ()
                 var geoms = thethis.parseInstanceGeom (xmlDoc, $(this));
                 $(geoms).each(function()
                     {
+                        if (this.material)
+                            this.textures = ["~pangwa/" + this.material.source];
                         var subPart = new PhiloGL.O3D.Model(this);
                         subPart.program = "3d";
-                        subPart.scale = new PhiloGL.Vec3(.01, .01, .01);
-                        subPart.colors = [1, 1, 1, 1];
-                        subPart.update();
+                        if (this.material)
+                            thethis.loadedtextures[this.material.id] = this.material.source;
                         geometries.push (subPart);
                     });
             });
-        var modelHolder = new PhiloGL.O3D.Model ();
-        modelHolder.program = "3d";
-        modelHolder.submodles = geometries;
-        modelHolder.isproxy = true;
-        modelHolder.render = function (gl, program, camera, scene)
-        {
-            $(this.submodles).each ( function()
-                {
-                    scene.renderObject(this, program);
-                });
-        };
-        return geometries;
+        //var modelHolder = new PhiloGL.O3D.Model ();
+        //modelHolder.program = "3d";
+        //modelHolder.submodles = geometries;
+        //modelHolder.isproxy = true;
+        //modelHolder.render = function (gl, program, camera, scene)
+        //{
+        //    $(this.submodles).each ( function()
+        //        {
+        //            scene.renderObject(this, program);
+        //        });
+        //};
+        //modelHolder.update = function ()
+        //{
+        //    var thethis = this;
+        //    $(this.submodles).each (function ()
+        //        {
+        //            this.scale = thethis.scale;
+        //            this.position = thethis.position;
+        //            this.colors = thethis.colors;
+        //            this.update ();
+        //        });
+        //}
+        //modelHolder.scale = new PhiloGL.Vec3(.05, .05, .05);
+        //modelHolder.colors = [1, 1, 1, 1];
+        //modelHolder.update();
+        return  geometries; //[modelHolder]; //geometries;
     };
 
     this.parseInstanceGeom = function (xmlDoc, node){
@@ -49,7 +65,13 @@ PhiloGL.IO.Collada_loader = function ()
                 var vertix= {offset: 0};
                 var normal= {offset: 1};
                 var textcoord= {offset: 2};
-
+                var materialname = $(this).attr("material");
+                var material;
+                if (materialname != "")
+                {
+                    var materialNode = $(xmlDoc).find("#"+materialname + "ID");
+                    material = thethis.parseMaterial (xmlDoc, materialNode);
+                }
                 $(this).find ('input').each (function(){
                         var offset = parseInt ($(this).attr('offset'), 10);
                         if (thethis.pointarrays[$(this).attr('source')] == undefined)
@@ -85,7 +107,8 @@ PhiloGL.IO.Collada_loader = function ()
                 geometries.push ({vertices : vertix.varray, 
                         indices : vertIndices,
                         normals : normals, 
-                        texCoords : textcoords
+                        texCoords : textcoords,
+                        material : material
                     });
             });
         return geometries;
@@ -106,5 +129,19 @@ PhiloGL.IO.Collada_loader = function ()
         var theArray = $.map (farray.trim().split(' '), parseFloat);
         return theArray;
     };
+
+    this.parseMaterial = function (xmlDoc, node)
+    {
+        var effect = node.find('instance_effect').attr("url");
+        var initfrom = $(xmlDoc).find(effect).find ('init_from');
+        if ( initfrom.length > 0)
+        {
+            var imgid = $(initfrom[0]).text ();
+            var source = $(xmlDoc).find("#"+imgid).find ('init_from').text();
+            return {id : imgid,
+                source : source};
+        }
+        return;
+    }
 }
 

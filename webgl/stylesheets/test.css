@@ -1,4 +1,15 @@
 #controls
 {
-float: right;
+float: left;
+width: 200;
+}
+
+#content
+{
+    margin-left: 210;
+}
+
+#logs
+{
+    height: 300px;
 }
