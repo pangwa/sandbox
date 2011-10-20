@@ -1,3 +1,4 @@
+// in code
 var surfacePoints = [];
 var faces = []; 
 var facePts = [];
@@ -8,6 +9,49 @@ var surface;
 var corridor;
 var minX, maxX, minY, maxY;
 var treeModel;
+
+ PhiloGL.Shaders.Fragment.Ufm = [
+
+    "#ifdef GL_ES",
+    "precision highp float;",
+    "#endif",
+    
+    "varying vec4 vColor;",
+    "varying vec2 vTexCoord;",
+    "varying vec3 lightWeighting;",
+    
+    "uniform bool hasTexture1;",
+    "uniform sampler2D sampler1;",
+
+    "uniform bool enablePicking;",
+    "uniform vec3 pickColor;",
+
+    "uniform bool hasFog;",
+    "uniform vec3 fogColor;",
+
+    "uniform float fogNear;",
+    "uniform float fogFar;",
+
+    "uniform vec4 colorUfm;",
+
+    "void main(){",
+      
+        "gl_FragColor = vec4(colorUfm.rgb * lightWeighting, colorUfm.a);",
+
+      "if(enablePicking) {",
+        "gl_FragColor = vec4(pickColor, 1.0);",
+      "}",
+      
+     // /* handle fog */
+     // "if (hasFog && colorUfm.r != 1.0) {",
+     //   "float depth = gl_FragCoord.z / gl_FragCoord.w;",
+     //   "float fogFactor = smoothstep(fogNear, fogFar, depth);",
+     //   "gl_FragColor = mix(gl_FragColor, vec4(fogColor, gl_FragColor.w), fogFactor);",
+     // "}",
+    
+    "}"
+
+  ].join("\n");
 
 AecEntity = function (subModels, type, db)
 {
@@ -151,7 +195,6 @@ function updateProperties (model)
     jQuery("#proplist").clearGridData (); //clear the property data
     if (!model)
     {
-        jQuery('#proplist').collapse ();
         return;
     }
     var mydata = [
@@ -215,9 +258,8 @@ function animateObject(teapot) {
         id: "3d",
         from: 'uris',
         vs: 'frag-lighting.vs.glsl',
-        fs: 'frag-lighting.fs.glsl'
-    }
-        ],
+        fs:  'frag-lighting.fs.glsl'
+    }],
     camera: {
         position: {
             x: 0, y: 0, z: -7
@@ -610,7 +652,7 @@ function animateObject(teapot) {
              if (model)
              {
                  var p = model.parentEnt;
-                 model.uniforms.colorUfm = [.5, .5, 0, 1];
+                 model.uniforms.colorUfm = [1, 1, 1, 1];
                  console.log (p.type + " was picked");
              }
              updateProperties (p);
