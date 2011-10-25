@@ -1,0 +1,27 @@
+<%= form_for(@landfile, :remote => (params[:action] == 'new' ? true : false)) do |f| %>
+  <% if @landfile.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@landfile.errors.count, "error") %> prohibited this landfile from being saved:</h2>
+
+      <ul>
+      <% @landfile.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <fieldset>
+  <div class="field">
+    <%= f.label :name %><br />
+    <%= f.text_field :name %>
+  </div>
+  <div class="field">
+    <%= f.label :postby %><br />
+    <%= f.text_field :postby %>
+  </div>
+    </fieldset>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

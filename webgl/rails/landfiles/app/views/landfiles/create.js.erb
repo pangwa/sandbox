@@ -1,0 +1,17 @@
+<% unless @landfile.errors.any? %>
+  $('#landfiles').append( '<%= escape_javascript(
+    render @landfile
+  ) %>' );
+  $('#new-landfile-form-container').replaceWith( '<%= escape_javascript(
+    render 'new_landfile_links'
+  ) %>' );
+<% else %>
+  var $form = $('#new_landfile'),
+      $errorDiv = $('<div id="error_explanation">'),
+      $errorList = $('<ul>');
+  <% @comment.errors.full_messages.each do |msg| %>
+    $errorList.append('<li><%= escape_javascript msg %></li>');
+  <% end %>
+  $form.find('#error_explanation').remove();
+  $form.prepend($errorDiv.append($errorList));
+<% end %>

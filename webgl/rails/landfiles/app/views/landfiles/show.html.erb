@@ -1,0 +1,15 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <b>Name:</b>
+  <%= @landfile.name %>
+</p>
+
+<p>
+  <b>Postby:</b>
+  <%= @landfile.postby %>
+</p>
+
+
+<%= link_to 'Edit', edit_landfile_path(@landfile) %> |
+<%= link_to 'Back', landfiles_path %>

@@ -1,0 +1,25 @@
+<h1>Listing landfiles</h1>
+
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Postby</th>
+    <th></th>
+    <th></th>
+    <th></th>
+  </tr>
+
+<% @landfiles.each do |landfile| %>
+  <tr>
+    <td><%= landfile.name %></td>
+    <td><%= landfile.postby %></td>
+    <td><%= link_to 'Show', landfile %></td>
+    <td><%= link_to 'Edit', edit_landfile_path(landfile) %></td>
+    <td><%= link_to 'Destroy', landfile, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= render 'new_landfile_links' %>
