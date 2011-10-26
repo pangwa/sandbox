@@ -691,7 +691,7 @@ function animateObject(teapot) {
              {
                  var p = model.parentEnt;
                  model.uniforms.colorUfm = [1, 1, 1, 1];
-                 console.log (p.type + " was picked");
+                 //console.log (p.type + " was picked");
              }
              updateProperties (p);
          },

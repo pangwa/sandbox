@@ -13,7 +13,7 @@ PhiloGL.IO.Collada_loader = function ()
                 $(geoms).each(function()
                     {
                         if (this.material)
-                            this.textures = ["~pangwa/" + this.material.source];
+                            this.textures = [this.material.source];
                         var subPart = new PhiloGL.O3D.Model(this);
                         subPart.program = "3d";
                         if (this.material)

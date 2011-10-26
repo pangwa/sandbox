@@ -21,6 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 */
+
+
 (function() { 
 //core.js
 //Provides general utility methods, module unpacking methods and the PhiloGL app creation method.
@@ -1463,7 +1465,21 @@ $.splat = (function() {
           ans[15] = dest[15];
 
           return ans;
+    },
+
+    compareToMat4 : function (m1, m2)
+    {
+    for (var i = 0; i < 16; i++)
+    {
+        if (m1[i] == m2[i])
+            continue;
+        else if (m1[i] > m2[i])
+        return 1;
+        else 
+            return -1;
     }
+    return 0;
+}
   };
   
   //add generics and instance methods
@@ -4362,13 +4378,19 @@ $.splat = (function() {
       //execute the beforeRender method once.
       !multiplePrograms && this.beforeRender(renderProgram || program);
       
+      //if (! this.orderModes || this.orderModes.length != this.models.length)
+      models= this.models.sort (function (a, b)
+          {
+              return PhiloGL.Mat4.compareToMat4(a.matrix, b.matrix);
+          });
       //Go through each model and render it.
-      for (var i = 0, models = this.models, l = models.length; i < l; ++i) {
+      var lastRenderObj;
+      for (var i = 0, l = models.length; i < l; ++i) {
         var elem = models[i];
         if (elem.display) {
             if (elem.lod)
             {
-                if (elem.position.distTo (camera.position) > 100)
+                if (elem.position.distTo (camera.position) > 200)
                     continue;
             }
           var program = renderProgram || this.getProgram(elem);
@@ -4377,9 +4399,10 @@ $.splat = (function() {
           multiplePrograms && this.beforeRender(program);
           elem.onBeforeRender(program, camera);
           options.onBeforeRender(elem, i);
-          this.renderObject(elem, program);
+          this.renderObject(elem, program, lastRenderObj);
           options.onAfterRender(elem, i);
           elem.onAfterRender(program, camera);
+          lastRenderObj = elem;
         }
       }
     },
@@ -4396,25 +4419,30 @@ $.splat = (function() {
       gl.bindTexture(texMemo.textureType, null);
     },
 
-    renderObject: function(obj, program) {
+    renderObject: function(obj, program, lastObj) {
+
+        obj.setState (program);
       var camera = this.camera,
-          view = camera.view,
-          projection = camera.projection,
-          object = obj.matrix,
-          world = view.mulMat4(object),
-          worldInverse = world.invert(),
+      view = camera.view;
+
+      if (!lastObj || (lastObj && PhiloGL.Mat4.compareToMat4 (obj.matrix, lastObj.matrix)))
+      {
+          projection = camera.projection;
+          object = obj.matrix;
+          world = view.mulMat4(object);
+          worldInverse = world.invert ()
           worldInverseTranspose = worldInverse.transpose();
 
-      obj.setState(program);
 
-      //Now set view and normal matrices
-      program.setUniforms({
-        objectMatrix: object,
-        worldMatrix: world,
-        worldInverseMatrix: worldInverse,
-        worldInverseTransposeMatrix: worldInverseTranspose
-//        worldViewProjection:  view.mulMat4(object).$mulMat4(view.mulMat4(projection))
-      });
+          //Now set view and normal matrices
+          program.setUniforms({
+                  objectMatrix: object,
+                  worldMatrix: world,
+                  worldInverseMatrix: worldInverse,
+                  worldInverseTransposeMatrix: worldInverseTranspose
+                  //        worldViewProjection:  view.mulMat4(object).$mulMat4(view.mulMat4(projection))
+              });
+      }
       
       //Draw
       //TODO(nico): move this into O3D, but, somehow, abstract the gl.draw* methods inside that object.
