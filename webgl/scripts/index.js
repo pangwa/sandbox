@@ -62,7 +62,7 @@ AecEntity = function (subModels, type, db)
     this.scale = new PhiloGL.Vec3(1.0, 1.0, 1.0);
     this.position = new PhiloGL.Vec3(.0, .0, .0);
     this.lod = false;
-    this.properties = [];
+    this.name = "";
     this.update ();
 
     if (db)
@@ -86,14 +86,18 @@ AecEntity.prototype.update = function ()
             this.position = thethis.position;
             this.lod = thethis.lod;
             this.parentEnt = thethis;
+            this.pickable = thethis.pickable;
             this.update ();
         });
 };
 
 AecEntity.prototype.clone = function (){
-    var newEntity = new AecEntity (this.subModels, this.type);
+    var subModels = $.map (this.subModels, function (v) { return v.clone ();});
+    var newEntity = new AecEntity (subModels, this.type);
     newEntity.properties = this.properties;
     newEntity.lod = this.lod;
+    newEntity.scale = this.scale;
+    newEntity.pickable = this.pickable;
     return newEntity;
 };
 
@@ -159,36 +163,36 @@ PhiloGL.O3D.Model.prototype.clone = function ()
     return newModel;
 };
 
-PhiloGL.O3D.Model.prototype.worldDraw = function (app)
-{
-    var gl = app.gl;
-    var program = app.program;
-    program.setBuffers({
-            'aVertexPosition': {
-                value: this.vertices,
-                size: 3
-            },
-            'aTextureCoord': {
-                value: this.texCoords,
-                size: 2
-            },
-            "indices": {
-                value:this.indices,
-                bufferType: gl.ELEMENT_ARRAY_BUFFER,
-                size: 1
-            }
-        });
-    program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
-    program.setTexture (this.textures[0]);
-    // set to repeating mode
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    view = theCamera.view;
-    program.setUniform('uMVMatrix', view);
-    program.setUniform('uPMatrix', theCamera.projection);
-    program.setUniform('uSampler', 0);
-    gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
-};
+//PhiloGL.O3D.Model.prototype.worldDraw = function (app)
+//{
+//    var gl = app.gl;
+//    var program = app.program;
+//    program.setBuffers({
+//            'aVertexPosition': {
+//                value: this.vertices,
+//                size: 3
+//            },
+//            'aTextureCoord': {
+//                value: this.texCoords,
+//                size: 2
+//            },
+//            "indices": {
+//                value:this.indices,
+//                bufferType: gl.ELEMENT_ARRAY_BUFFER,
+//                size: 1
+//            }
+//        });
+//    program.setBuffer("aVertexPosition").setBuffer("aTextureCoord").setBuffer('indices');
+//    program.setTexture (this.textures[0]);
+//    // set to repeating mode
+//    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+//    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+//    view = theCamera.view;
+//    program.setUniform('uMVMatrix', view);
+//    program.setUniform('uPMatrix', theCamera.projection);
+//    program.setUniform('uSampler', 0);
+//    gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
+//};
 
 function updateProperties (model)
 {
@@ -198,10 +202,11 @@ function updateProperties (model)
         return;
     }
     var mydata = [
-   {propname : "Name" , value : "test"},
+   {propname : "Name" , value : model.name},
    {propname : "Type" , value : model.type},
    {propname : "Triangles", value : model.facesCount ()}
    ];
+   mydata = mydata.concat (model.properties);
    for (var i = 0; i < mydata.length; i++)
    {
        jQuery("#proplist").jqGrid('addRowData', i+1 ,mydata[i]);
@@ -221,12 +226,22 @@ function myMax(x, x2)
     return Math.max(x, x2);
 }
 
+var loadingDialog;
+
 function webGLStart() {
+    loadingDialog = $('<div></div>')
+    .html('Please be patient while the LandXML file loads. This may take a moment depending on the size of the LandXML file and the speed of your network connection.')
+    .dialog({
+            autoOpen: true,
+            modal: true,
+            title: 'Loading LandXML File...'
+        });
+
     jQuery("#proplist").jqGrid({ datatype: "local",
-            height : 200,
+            height : 300,
             colNames: ["Property", "Value"],
-            colModel : [{name : 'propname', index : 'propname', width: 100, sorttype: 'string'},
-            {name : "value", index : "value", width: 100, sorttype: "string"}
+            colModel : [{name : 'propname', index : 'propname', width: 120, sorttype: 'string'},
+            {name : "value", index : "value", width: 140, sorttype: "string"}
         ],
         multiselect: false,
         caption : "Object Properties"
@@ -237,15 +252,13 @@ function webGLStart() {
      program: "3d"
          });
 
-    surface.pickable = true;
-      
   //Get Model
   new PhiloGL.IO.XHR({
     url: 'Teapot.json',
     onSuccess: function(text) {
       var json = JSON.parse(text);
       json.colors = [0, 0, 1, 1];
-      json.textures = 'arroway.de_metal+structure+06_d100_flat.jpg';
+      json.textures = 'teapot.jpg';
       var teapot = new PhiloGL.O3D.Model(json);
       teapot.program = "3d";
       animateObject(teapot);
@@ -254,20 +267,14 @@ function webGLStart() {
 
 function animateObject(teapot) {
    PhiloGL('lesson01-canvas', {
-    program: [{
-        id: "3d",
-        from: 'uris',
-        vs: 'frag-lighting.vs.glsl',
-        fs:  'frag-lighting.fs.glsl'
-    }],
-    camera: {
+        camera: {
         position: {
             x: 0, y: 0, z: -7
         }
     },
 
     textures:{
-        src: ['arroway.de_metal+structure+06_d100_flat.jpg', "7.jpg",
+        src: ['teapot.jpg', "7.jpg",
         "road.png"],
         parameters: [{
           name: 'TEXTURE_MAG_FILTER',
@@ -299,7 +306,7 @@ function animateObject(teapot) {
 
       var database = new AecDatabase (app);
 
-      $("#loadTree").click (function (e){
+      $("#loadtree").click (function (e){
               new PhiloGL.IO.XHR({
                       url: 'data/palmtree.dae',
                       onSuccess: function(text) {
@@ -308,7 +315,7 @@ function animateObject(teapot) {
                           var geometries = parser.parse (xmlDoc);
                           //app.scene.add (geometries);
 
-                          var textures = $.map (parser.loadedtextures, function(m){return "~pangwa/" + m;});
+                          var textures = $.map (parser.loadedtextures, function(m){return "" + m;});
 
                           PhiloGL.IO.Textures({
                                   src: textures,
@@ -324,6 +331,8 @@ function animateObject(teapot) {
 
                                       treeModel = new AecEntity (geometries, "tree");
                                       treeModel.lod = true;
+                                      treeModel.pickable = true;
+                                      treeModel.scale = new PhiloGL.Vec3(.05, .05, .05);
                                       treeModel.update ();
                                       treeModel.addToDb (database);                                      
                                       //$(geometries).each (function(){
@@ -361,7 +370,9 @@ function animateObject(teapot) {
       //gl.drawArrays(gl.TRIANGLES, 0, 3);
       
       var xmlDoc = $.parseXML($("#surface").html());
-      $(xmlDoc).find('P').each (function()
+      $(xmlDoc).find("Surface").each (function ()
+      {
+          $(this).find('P').each (function()
               {
                   var id = parseInt($(this).attr("id"), 10);
                   var pt = $.map($(this).text().split(" "), parseFloat);
@@ -371,97 +382,106 @@ function animateObject(teapot) {
               }
           );
 
-       $(xmlDoc).find('F').each (function(){
-               if ($(this).attr('i') != "1")
-               {
-                   var pts = $.map($(this).text().split(' '), function(idx)
-                       {
-                           return parseInt (idx, 10);
-                       });
-                   faces.push (pts);
-               }
-           });
-       var vertices = new Float32Array(surfacePoints.length * 3);
-       $(surfacePoints).each(function (i)
-           {
-               if (surfacePoints[i])
-               {
-                   //
-                   // swap x, y
-                   vertices[i * 3] = surfacePoints[i][1];
-                   vertices[i * 3 + 1] = surfacePoints[i][0];
-                   vertices[i * 3 + 2] = surfacePoints[i][2];
-                   minX = minX != undefined ? Math.min(minX, vertices[i*3]) : vertices[i * 3];
-                   minY = minY != undefined ? Math.min(minY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
-                   maxX = maxX != undefined ? Math.max(maxX, vertices[i*3]) : vertices[i * 3];
-                   maxY = maxY != undefined ? Math.max(maxY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
-               }
-               else
-               {
-                  // vertices[i * 3] = 0;
-                  // vertices[i * 3+ 1] = 0;
-                  // vertices[i * 3+ 2] = 0;
-               }
-           });
+          $(this).find('F').each (function(){
+                  if ($(this).attr('i') != "1")
+                  {
+                      var pts = $.map($(this).text().split(' '), function(idx)
+                          {
+                              return parseInt (idx, 10);
+                          });
+                      faces.push (pts);
+                  }
+              });
+          var vertices = new Float32Array(surfacePoints.length * 3);
+          $(surfacePoints).each(function (i)
+              {
+                  if (surfacePoints[i])
+                  {
+                      //
+                      // swap x, y
+                      vertices[i * 3] = surfacePoints[i][1];
+                      vertices[i * 3 + 1] = surfacePoints[i][0];
+                      vertices[i * 3 + 2] = surfacePoints[i][2];
+                      minX = minX != undefined ? Math.min(minX, vertices[i*3]) : vertices[i * 3];
+                      minY = minY != undefined ? Math.min(minY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
+                      maxX = maxX != undefined ? Math.max(maxX, vertices[i*3]) : vertices[i * 3];
+                      maxY = maxY != undefined ? Math.max(maxY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
+                  }
+                  else
+                  {
+                      // vertices[i * 3] = 0;
+                      // vertices[i * 3+ 1] = 0;
+                      // vertices[i * 3+ 2] = 0;
+                  }
+              });
 
-       var uvMatrix = [];
+          var uvMatrix = [];
 
-       var oldRender = app.scene.render;
-       //app.scene.render = function ()
-       //{
-       //}
-       var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
-       $(surfacePoints).each(function (i)
-           {
-               var u = Math.abs ((vertices[i*3] - minX) / maxDist);
-               var v = Math.abs ((vertices[i*3 + 1] - minY) / maxDist);
-               uvMatrix[i] = [u, v];
-           });
-       surface.vertices = vertices;
-       var arrayTemp = new Array(faces.length * 3);
-       var idx = 0;
-       $(faces).each (function (i){
-               $.map(faces[i], function(v) {
-                       arrayTemp[idx++] = v;
-                   });
-           });
+          var oldRender = app.scene.render;
+          //app.scene.render = function ()
+          //{
+          //}
+          var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
+          $(surfacePoints).each(function (i)
+              {
+                  var u = Math.abs ((vertices[i*3] - minX) / maxDist);
+                  var v = Math.abs ((vertices[i*3 + 1] - minY) / maxDist);
+                  uvMatrix[i] = [u, v];
+              });
+          surface.vertices = vertices;
+          var arrayTemp = new Array(faces.length * 3);
+          var idx = 0;
+          $(faces).each (function (i){
+                  $.map(faces[i], function(v) {
+                          arrayTemp[idx++] = v;
+                      });
+              });
 
-       surface.indices = arrayTemp;
+          surface.indices = arrayTemp;
 
 
-       var textCoords = new Float32Array(surfacePoints.length * 2);
-       var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
-       var factor = 1.0;
-       if (maxDist > 256)
-           factor = (maxDist / 256* 8);
+          var textCoords = new Float32Array(surfacePoints.length * 2);
+          var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
+          var factor = 1.0;
+          if (maxDist > 256)
+              factor = (maxDist / 256* 8);
 
-       for (var i = 0; i < surfacePoints.length; i++)
-       {
-           textCoords[i*2] = uvMatrix [i][0] * factor;
-           textCoords[i*2 + 1] = uvMatrix [i][1] * factor;
-       }
-       //for ( i = 0; i < faces.length; i++)
-       //{
-       //    for (j = 0; j < 6; j++)
-       //        textCoords [i*6 + j] = iTexCoords[j];
-       //    
-       //    var uv = getUv(faces[i]);
-       //    textCoords[i*6] = uv[0]
-       //    textCoords[i*6 + 1] = uv[1];
-       //    //uv = getUv(faces[i][1]);
-       //    textCoords[i*6 + 2] = uv[2];
-       //    textCoords[i*6 + 3] = uv[3];
-       //    //uv = getUv(faces[i][2]);
-       //    textCoords[i*6 + 4] = uv[4];
-       //    textCoords[i*6 + 5] = uv[5];
-       //}
+          for (var i = 0; i < surfacePoints.length; i++)
+          {
+              textCoords[i*2] = uvMatrix [i][0] * factor;
+              textCoords[i*2 + 1] = uvMatrix [i][1] * factor;
+          }
+          //for ( i = 0; i < faces.length; i++)
+          //{
+          //    for (j = 0; j < 6; j++)
+          //        textCoords [i*6 + j] = iTexCoords[j];
+          //    
+          //    var uv = getUv(faces[i]);
+          //    textCoords[i*6] = uv[0]
+          //    textCoords[i*6 + 1] = uv[1];
+          //    //uv = getUv(faces[i][1]);
+          //    textCoords[i*6 + 2] = uv[2];
+          //    textCoords[i*6 + 3] = uv[3];
+          //    //uv = getUv(faces[i][2]);
+          //    textCoords[i*6 + 4] = uv[4];
+          //    textCoords[i*6 + 5] = uv[5];
+          //}
 
-       surface.texCoords = textCoords;
+          surface.texCoords = textCoords;
 
-       //set buffers with cube data
-       surface.update ();
-       var surfaceEnt = new AecEntity ([surface], "surface");
-       surfaceEnt.addToDb (database);
+          //set buffers with cube data
+          var surfaceEnt = new AecEntity ([surface], "surface");
+          surfaceEnt.name = $(this).attr ('name');
+          //should be only one definition node
+          $(this).find ('Definition').each (function (){
+                  $.each (this.attributes, function (i, attrib){
+                          surfaceEnt.properties.push ( {propname: attrib.name, value : attrib.value});
+                      });
+              });
+          surfaceEnt.pickable = true;
+          surfaceEnt.update ();
+          surfaceEnt.addToDb (database);
+      });
        //app.scene.add (surface);
        //teapot.update ();
        //app.scene.add (teapot);
@@ -487,6 +507,17 @@ function animateObject(teapot) {
                if (align["corridor"])
                {
                    var corridorEnttity = new AecEntity([align["corridor"] ], "corridor");
+                   var corridorNode = $(xmlDoc).find ("Roadway[alignmentRefs='" + name + "']")[0];
+                   if (corridorNode)
+                   {
+                       corridorEnttity.name = $(corridorNode).attr ('name'); 
+                       $.each (corridorNode.attributes, function (i, attrib){
+                               if (attrib.name != 'name')
+                                   corridorEnttity.properties.push ( {propname: attrib.name, value : attrib.value});
+                           });
+                   }
+                   corridorEnttity.pickable = true;
+                   corridorEnttity.update ();
                    corridorEnttity.addToDb (database);
                }
               });
@@ -522,6 +553,13 @@ function animateObject(teapot) {
 
        $("#cleardb").click (function (e){
                database.clear ();
+           });
+
+       $("#stat").click (function (e){
+               var log = "";
+               log += "Total Entities: " + database.entities.length + "</br>";
+               log += "Total O3D Models: " + database.scene.models.length + "</br>";
+               $("#logs").html (log);
            });
        camera.view.lookAt (p, c, u);
        var curIndex = 0;
@@ -698,6 +736,7 @@ function animateObject(teapot) {
          //}
      }
   });  
+   loadingDialog.dialog ('close');
 }
 }
 
@@ -1086,7 +1125,6 @@ corridor = new PhiloGL.O3D.Model({
             program: "3d"
 });
     corridor.treepos = treespos;
-    corridor.pickable = true;
     return corridor;
 }
 

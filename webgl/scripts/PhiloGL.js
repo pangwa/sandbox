@@ -4366,6 +4366,11 @@ $.splat = (function() {
       for (var i = 0, models = this.models, l = models.length; i < l; ++i) {
         var elem = models[i];
         if (elem.display) {
+            if (elem.lod)
+            {
+                if (elem.position.distTo (camera.position) > 100)
+                    continue;
+            }
           var program = renderProgram || this.getProgram(elem);
           //Setup the beforeRender method for each object
           //when there are multiple programs to be used.
