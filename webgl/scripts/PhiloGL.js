@@ -1469,17 +1469,17 @@ $.splat = (function() {
 
     compareToMat4 : function (m1, m2)
     {
-    for (var i = 0; i < 16; i++)
-    {
-        if (m1[i] == m2[i])
-            continue;
-        else if (m1[i] > m2[i])
-        return 1;
-        else 
-            return -1;
+        for (var i = 0; i < 16; i++)
+        {
+            if (m1[i] == m2[i])
+                continue;
+            else if (m1[i] > m2[i])
+            return 1;
+            else 
+                return -1;
+        }
+        return 0;
     }
-    return 0;
-}
   };
   
   //add generics and instance methods
@@ -4268,8 +4268,8 @@ $.splat = (function() {
           pos = camera.position,
           view = camera.view,
           projection = camera.projection,
-          viewProjection = view.mulMat4(projection),
-          viewProjectionInverse = viewProjection.invert();
+          viewProjection = PhiloGL.Mat4.mulMat4 (view, projection),
+          viewProjectionInverse = PhiloGL.Mat4.invert (viewProjection);
 
       program.setUniforms({
         cameraPosition: [pos.x, pos.y, pos.z],
@@ -4384,13 +4384,13 @@ $.splat = (function() {
               return PhiloGL.Mat4.compareToMat4(a.matrix, b.matrix);
           });
       //Go through each model and render it.
-      var lastRenderObj;
+      var lastRenderObj = {};
       for (var i = 0, l = models.length; i < l; ++i) {
         var elem = models[i];
         if (elem.display) {
             if (elem.lod)
             {
-                if (elem.position.distTo (camera.position) > 200)
+                if (PhiloGL.Vec3.distTo (elem.position, camera.position) > 200)
                     continue;
             }
           var program = renderProgram || this.getProgram(elem);
@@ -4399,10 +4399,10 @@ $.splat = (function() {
           multiplePrograms && this.beforeRender(program);
           elem.onBeforeRender(program, camera);
           options.onBeforeRender(elem, i);
-          this.renderObject(elem, program, lastRenderObj);
+          this.renderObject(elem, program, lastRenderObj[program]);
           options.onAfterRender(elem, i);
           elem.onAfterRender(program, camera);
-          lastRenderObj = elem;
+          lastRenderObj[program] = elem;
         }
       }
     },
@@ -4429,9 +4429,9 @@ $.splat = (function() {
       {
           projection = camera.projection;
           object = obj.matrix;
-          world = view.mulMat4(object);
-          worldInverse = world.invert ()
-          worldInverseTranspose = worldInverse.transpose();
+          world = PhiloGL.Mat4.mulMat4 (view, object);
+          worldInverse = PhiloGL.Mat4.invert (world);
+          worldInverseTranspose = PhiloGL.Mat4.transpose (worldInverse);
 
 
           //Now set view and normal matrices
