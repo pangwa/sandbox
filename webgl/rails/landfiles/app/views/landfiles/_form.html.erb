@@ -12,14 +12,21 @@
   <% end %>
 
   <fieldset>
-  <div class="field">
-    <%= f.label :name %><br />
-    <%= f.text_field :name %>
-  </div>
-  <div class="field">
+      <div class="field">
+          <%= f.label :name%><br />
+          <%= f.text_field :name%>
+      </div>
+
+    <div class="field">
     <%= f.label :postby %><br />
     <%= f.text_field :postby %>
   </div>
+  <% if params[:attachment] %>
+      <div class="field">
+          <%= f.label :attachment, :class => 'required' %><br />
+          <%= f.file_field :attachment, :required => true %>
+      </div>
+  <% end %>
     </fieldset>
   <div class="actions">
     <%= f.submit %>

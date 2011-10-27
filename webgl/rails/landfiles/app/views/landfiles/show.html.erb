@@ -1,15 +1,16 @@
-<p id="notice"><%= notice %></p>
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Postby</th>
+    <th>Attachment</th>
+    <th></th>
+    <th></th>
+    <th></th>
+  </tr>
+  <%= render @landfile %>
+</table>
 
-<p>
-  <b>Name:</b>
-  <%= @landfile.name %>
-</p>
+<br />
 
-<p>
-  <b>Postby:</b>
-  <%= @landfile.postby %>
-</p>
-
-
-<%= link_to 'Edit', edit_landfile_path(@landfile) %> |
 <%= link_to 'Back', landfiles_path %>
+

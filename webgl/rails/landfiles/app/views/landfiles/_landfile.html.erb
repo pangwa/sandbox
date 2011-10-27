@@ -1,6 +1,7 @@
 <tr class='landfile' id='landfile-<%= landfile.id %>'>
   <td><%= landfile.name%></td>
   <td><%= landfile.postby%></td>
+  <td><%= link_to landfile.attachment_file_name, landfile.attachment.url if landfile.attachment? %></td>
   <td><%= link_to 'Show', landfile %></td>
   <td><%= link_to 'Edit', edit_landfile_path(landfile) %></td>
   <td><%= link_to 'Destroy', landfile, :confirm => 'Are you sure?', :method => :delete, :remote => true %></td>

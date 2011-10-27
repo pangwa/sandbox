@@ -3,6 +3,7 @@ class CreateLandfiles < ActiveRecord::Migration
     create_table :landfiles do |t|
       t.string :name
       t.string :postby
+      t.string :attachment
 
       t.timestamps
     end

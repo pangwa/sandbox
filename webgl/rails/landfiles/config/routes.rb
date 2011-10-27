@@ -1,9 +1,7 @@
 Landfiles::Application.routes.draw do
-  get "home/index"
-
   resources :landfiles
 
-    root :to => "home#index"
+  root :to => "landfiles#index"
   # The priority is based upon order of creation:
   # first created -> highest priority.
 

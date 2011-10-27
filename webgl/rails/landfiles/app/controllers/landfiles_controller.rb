@@ -45,7 +45,7 @@ class LandfilesController < ApplicationController
   # POST /landfiles
   # POST /landfiles.json
   def create
-    @landfile = Landfile.new(params[:landfile])
+    @landfile = Landfile.create(params[:landfile])
     redirect_to landfiles_path unless request.xhr?
 
   #  respond_to do |format|
