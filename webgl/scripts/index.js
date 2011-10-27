@@ -541,10 +541,13 @@ function animateObject(teapot) {
                {
                    $(corridor.treepos).each (function ()
                        {
-                           var newModel = treeModel.clone ();
-                           newModel.position = this[0];
-                           newModel.update ();
-                           newModel.addToDb (database);
+                           $(this).each (function ()
+                               {
+                                   var newModel = treeModel.clone ();
+                                   newModel.position = this;
+                                   newModel.update ();
+                                   newModel.addToDb (database);
+                               });
                            //app.scene.add (newModel);
                        });
                    app.scene.render ();
@@ -579,11 +582,13 @@ function animateObject(teapot) {
 
        setInterval (updateLogs, 1000/3);
        var it;
+       var itStat;
        var dimFx;
        $("#stop").click (function (e){
               // if ($('#stop').val() != 'resume')
                {
                    clearInterval (it);
+                   clearInterval (itStat);
               //     $("#stop").val ('resume');
               //     $("#stop").text ('resume');
                    it = undefined;
@@ -655,6 +660,7 @@ function animateObject(teapot) {
                            //theCamera.view.lookAt (p, c, u);
                            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                            app.scene.render ();
+                           totalFrames ++;
                            //drawWorld (app);
                            curIndex ++;
                        }
@@ -662,9 +668,11 @@ function animateObject(teapot) {
                    onComplete: function() {
                        // do the annomation
                        clearInterval (it);
+                       clearInterval (itStat);
                    }
                });
 
+           var totalFrames = 0;
            //start the animation with custom `from` and `to` properties.
            dimFx.start({
                    from: 0,
@@ -673,6 +681,13 @@ function animateObject(teapot) {
 
            $("#stop").val('stop');
            $("#stop").text ('stop');
+
+           var lastTotalFrames = 0;
+           itStat = setInterval (function (){
+                   var frames = totalFrames - lastTotalFrames;
+                   lastTotalFrames = totalFrames;
+                   $('#logs').html ("frames: " + frames + " fps");
+               }, 1000);
            it = setInterval(function() {
                    dimFx.step();
                }, 1000 / 60);
@@ -1077,12 +1092,13 @@ function buildCorridorModeFromSections (info)
             continue;
         }
 
-        if (i % 5 == 0)
-        {
-            var leftPos = s1[0].point;
-            var rightPos = s1[s1.length - 1].point;
+        var leftPos = s1[0].point;
+        var rightPos = s1[s1.length - 1].point;
+        //
+        // Make sure the tree are not too crowd
+        //
+        if (treespos.length == 0 || (PhiloGL.Vec3.distTo (leftPos, treespos[treespos.length - 1][0]) > 50 && PhiloGL.Vec3.distTo (rightPos, treespos[treespos.length - 1][1]) > 50))
             treespos.push ([leftPos, rightPos]);
-        }
 
         for (var j = 0; j < s1.length - 1; j++)
         {
@@ -1116,6 +1132,7 @@ function buildCorridorModeFromSections (info)
             indices = indices.concat ([i1, i2, i3, i2, i3, i4])
         }
     }
+
 
 corridor = new PhiloGL.O3D.Model({
             textures: ["road.png"],
@@ -1206,6 +1223,17 @@ function handleAlignment (align)
                 startStn = endStn;
             }
         });
+    //
+    //
+    //
+    for (var j = 0; j < 4; j++)
+    {
+        for (var i = 0, l = lSamplePoints.length - 1; i < l; i++)
+        {
+            var tiny = 0.2;
+            lSamplePoints[i + 1].z = tiny * lSamplePoints[i + 1].z + (1.0 - tiny) * lSamplePoints[i].z;
+        }
+    }
     ret ["samplePoints"] = lSamplePoints;
     ret ["corridor"] = theCorridor;
     return ret;
