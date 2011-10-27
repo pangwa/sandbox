@@ -439,7 +439,6 @@ function animateObject(teapot) {
 
           surface.indices = arrayTemp;
 
-
           var textCoords = new Float32Array(surfacePoints.length * 2);
           var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
           var factor = 1.0;
@@ -550,6 +549,7 @@ function animateObject(teapot) {
                                });
                            //app.scene.add (newModel);
                        });
+                   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                    app.scene.render ();
                }
            });
@@ -559,10 +559,10 @@ function animateObject(teapot) {
            });
 
        $("#stat").click (function (e){
-               var log = "";
-               log += "Total Entities: " + database.entities.length + "</br>";
-               log += "Total O3D Models: " + database.scene.models.length + "</br>";
-               $("#logs").html (log);
+              // var log = "";
+              // log += "Total Entities: " + database.entities.length + "</br>";
+              // log += "Total O3D Models: " + database.scene.models.length + "</br>";
+              // $("#logs").html (log);
            });
        camera.view.lookAt (p, c, u);
        var curIndex = 0;
@@ -646,17 +646,17 @@ function animateObject(teapot) {
                            theCamera.up = u;
                            theCamera.target = c;
                            theCamera.update ();
-                           teapot.position = theCamera.target.clone ();
+                           //teapot.position = theCamera.target.clone ();
                           // if (treeModel)
                           // {
                           //     treeModel.position = theCamera.target.clone ();
                           //     treeModel.position.z += 2.5;
                           //     //treeModel.update ();
                           // }
-                           teapot.position.z += 2.0;
+                           //teapot.position.z += 2.0;
                            //teapot.scale = [10.1, 10.1, 20.1];
                            //teapot.scale = [0.01, 0.01, 0.01];
-                           teapot.update();
+                           //teapot.update();
                            //theCamera.view.lookAt (p, c, u);
                            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                            app.scene.render ();
@@ -688,6 +688,10 @@ function animateObject(teapot) {
                    lastTotalFrames = totalFrames;
                    $('#logs').html ("frames: " + frames + " fps");
                }, 1000);
+           //PhiloGL.Fx.requestAnimationFrame (function callback(){
+           //        dimFx.step ();
+           //        PhiloGL.Fx.requestAnimationFrame (callback);
+           //    });
            it = setInterval(function() {
                    dimFx.step();
                }, 1000 / 60);
@@ -706,9 +710,44 @@ function animateObject(teapot) {
              {
                  var p = model.parentEnt;
                  model.uniforms.colorUfm = [1, 1, 1, 1];
+                 var points = [];
+                 var faces = [];
+                 for (var i = 0, indices = model.indices, l = model.indices.length / 3; i < l; i++)
+                 {
+                     function checkAndComputePoint (ind)
+                     {
+                         if(points[ind])
+                             return points[ind];
+                         points[ind] = [model.vertices[ind * 3], model.vertices[ind * 3 + 1], model.vertices[ind * 3 + 2] ];
+                         return points[ind];
+                     };
+                     var pt1 = checkAndComputePoint (indices[i]);
+                     var pt2 = checkAndComputePoint (indices[i + 1]);
+                     var pt3 = checkAndComputePoint (indices[i + 3]);
+                     faces.push ([pt1, pt2, pt3]);
+                 }
+                 faces2 = faces.map (function (v){
+                         return v.map (function (pt){
+                                 return camera.view.mulVec3 (pt);
+                             });
+                     });
+                 //
+                 // need to work on...
+                 //
+                 var thex = this.canvas.width / 2 + e.x;
+                 var they = this.canvas.height / 2 + e.y;
+                 for (i = 0, l = faces2.length; i < l; i++)
+                 {
+                     var pts = faces2[i];
+                     if (isPointInTriangle ([they, thex, 0], pts[0], pts[1], pts[2]))
+                         {
+                             console.log ("point is in triangle...", pts);
+                         }
+                 }
                  //console.log (p.type + " was picked");
              }
              updateProperties (p);
+             console.log (e.x + ", " +  e.y);
          },
          onMouseEnter: function(e, model) {
              model.uniforms.colorUfm = [1, 1, 1, 1];
@@ -1230,7 +1269,7 @@ function handleAlignment (align)
     {
         for (var i = 0, l = lSamplePoints.length - 1; i < l; i++)
         {
-            var tiny = 0.2;
+            var tiny = 0.25;
             lSamplePoints[i + 1].z = tiny * lSamplePoints[i + 1].z + (1.0 - tiny) * lSamplePoints[i].z;
         }
     }
@@ -1241,10 +1280,10 @@ function handleAlignment (align)
 
 function isPointInTriangle (p, p1, p2, p3)
 {
-    var p = new PhiloGL.Vec3 (p[0], p[1], p[2]);
-    var a = new PhiloGL.Vec3 (p1[0], p1[1], p1[2]);
-    var b = new PhiloGL.Vec3 (p2[0], p2[1], p2[2]);
-    var c = new PhiloGL.Vec3 (p3[0], p3[1], p3[2]);
+    var p = new PhiloGL.Vec3 (p[0], p[1], 0);
+    var a = new PhiloGL.Vec3 (p1[0], p1[1], 0);
+    var b = new PhiloGL.Vec3 (p2[0], p2[1], 0);
+    var c = new PhiloGL.Vec3 (p3[0], p3[1], 0);
     var v0 = c.sub(a);
     var v1 = b.sub(a);
     var v2 = p.sub(a);
@@ -1286,3 +1325,4 @@ function buildCorridor (align)
         });
 }
 
+                 

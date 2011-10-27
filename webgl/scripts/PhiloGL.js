@@ -4090,7 +4090,7 @@ $.splat = (function() {
       "vPickingColor = pickingColor;",
       "vTexCoord = texCoord1;",
       "vNormal = transformedNormal;",
-      "gl_Position = projectionMatrix * worldMatrix * vec4(position, 1.0);",
+      "gl_Position = projectionMatrix * mvPosition;",
     "}"
   
   ].join("\n");
