@@ -2100,9 +2100,7 @@ $.splat = (function() {
           this.callbacks.onMouseEnter(e, this.hovered);
         }
       }
-      if (!this.opt.picking) {
-        this.callbacks.onMouseMove(e);
-      }
+      this.callbacks.onMouseMove(e);
     },
     
     mousewheel: function(e) {
@@ -4090,7 +4088,7 @@ $.splat = (function() {
       "vPickingColor = pickingColor;",
       "vTexCoord = texCoord1;",
       "vNormal = transformedNormal;",
-      "gl_Position = projectionMatrix * mvPosition;",
+      "gl_Position = projectionMatrix * worldMatrix * vec4(position, 1.0);",
     "}"
   
   ].join("\n");
