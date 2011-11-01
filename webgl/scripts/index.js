@@ -277,7 +277,7 @@ function animateObject(teapot) {
 
     textures:{
         src: ['teapot.jpg', "7.jpg",
-        "road.png"],
+        "road.png", "road5.jpg", "road2.png"],
         parameters: [{
           name: 'TEXTURE_MAG_FILTER',
           value: 'LINEAR'
@@ -727,56 +727,56 @@ function animateObject(teapot) {
              //var model = this.scene.pick (e.x, e.y);
              if (model)
              {
-                 console.log (e.x + ", " +  e.y);
-                 var p = model.parentEnt;
-                 model.uniforms.colorUfm = [1, 1, 1, 1];
-                 var points = [];
-                 var faces = [];
-                 for (var i = 0, indices = model.indices, l = model.indices.length / 3; i < l; i++)
-                 {
-                     function checkAndComputePoint (ind)
-                     {
-                         if(points[ind])
-                             return points[ind];
-                         points[ind] = [model.vertices[ind * 3], model.vertices[ind * 3 + 1], model.vertices[ind * 3 + 2] ];
-                         return points[ind];
-                     };
-                     var pt1 = checkAndComputePoint (indices[i * 3]);
-                     var pt2 = checkAndComputePoint (indices[i * 3 + 1]);
-                     var pt3 = checkAndComputePoint (indices[i * 3 + 2]);
-                     faces.push ([pt1, pt2, pt3]);
-                 }
+                 //console.log (e.x + ", " +  e.y);
+                 //var p = model.parentEnt;
+                 //model.uniforms.colorUfm = [1, 1, 1, 1];
+                 //var points = [];
+                 //var faces = [];
+                 //for (var i = 0, indices = model.indices, l = model.indices.length / 3; i < l; i++)
+                 //{
+                 //    function checkAndComputePoint (ind)
+                 //    {
+                 //        if(points[ind])
+                 //            return points[ind];
+                 //        points[ind] = [model.vertices[ind * 3], model.vertices[ind * 3 + 1], model.vertices[ind * 3 + 2] ];
+                 //        return points[ind];
+                 //    };
+                 //    var pt1 = checkAndComputePoint (indices[i * 3]);
+                 //    var pt2 = checkAndComputePoint (indices[i * 3 + 1]);
+                 //    var pt3 = checkAndComputePoint (indices[i * 3 + 2]);
+                 //    faces.push ([pt1, pt2, pt3]);
+                 //}
 
-                 var camera = this.camera;
-                 var mWorld = camera.view.mulMat4 (cube.matrix);
-                 var mPv1 = camera.projection.mulMat4 (mWorld);
-                 var dist1 = PhiloGL.Vec3.distTo (camera.position, camera.target);
-                 var width =  2 * Math.tan ((Math.PI * camera.fov / 360)) * dist1;
-                 var scaleDim = this.canvas.width / width;
-                 //scaleDim = scaleDim * 2 / camera.projection[0];
-                 //mPv = mPv1.scale (this.canvas.width / width, this.canvas.height / width, 1);
-                 faces2 = faces.map (function (v){
-                         return v.map (function (pt){
-                                 var pt2 = mPv1.mulVec3 (pt);
-                                 pt2[0] *= scaleDim;
-                                 pt2[1] *= scaleDim;
-                                 return pt2;
-                             });
-                     });
-                 //
-                 // need to work on...
-                 //
-                 var thex =  e.x;
-                 var they =  e.y;
-                 for (i = 0, l = faces2.length; i < l; i++)
-                 {
-                     var pts = faces2[i];
-                     //console.log (' p (' + pts[0][0] + ", " + pts[0][1] + ")");
-                     if (isPointInTriangle ([thex, they, 0], pts[0], pts[1], pts[2]))
-                         {
-                             console.log ("point is in triangle...", pts);
-                         }
-                 }
+                 //var camera = this.camera;
+                 //var mWorld = camera.view.mulMat4 (cube.matrix);
+                 //var mPv1 = camera.projection.mulMat4 (mWorld);
+                 //var dist1 = PhiloGL.Vec3.distTo (camera.position, camera.target);
+                 //var width =  2 * Math.tan ((Math.PI * camera.fov / 360)) * dist1;
+                 //var scaleDim = this.canvas.width / width;
+                 ////scaleDim = scaleDim * 2 / camera.projection[0];
+                 ////mPv = mPv1.scale (this.canvas.width / width, this.canvas.height / width, 1);
+                 //faces2 = faces.map (function (v){
+                 //        return v.map (function (pt){
+                 //                var pt2 = mPv1.mulVec3 (pt);
+                 //                pt2[0] *= scaleDim;
+                 //                pt2[1] *= scaleDim;
+                 //                return pt2;
+                 //            });
+                 //    });
+                 ////
+                 //// need to work on...
+                 ////
+                 //var thex =  e.x;
+                 //var they =  e.y;
+                 //for (i = 0, l = faces2.length; i < l; i++)
+                 //{
+                 //    var pts = faces2[i];
+                 //    //console.log (' p (' + pts[0][0] + ", " + pts[0][1] + ")");
+                 //    if (isPointInTriangle ([thex, they, 0], pts[0], pts[1], pts[2]))
+                 //        {
+                 //            console.log ("point is in triangle...", pts);
+                 //        }
+                 //}
                  //console.log (p.type + " was picked");
              }
              updateProperties (p);
@@ -1159,10 +1159,34 @@ function buildCorridorModeFromSections (info)
 
     var dYLast = 0;
 
-    for (var i = 0; i < sections.length - 1; i++)
+    //
+    // build the vertex array
+    //
+    var dYLast = 0.0;
+    for (var i = 0; i < sections.length; i++)
+    {
+        var s =  sections[i];
+        if (i > 0)
+            dYLast += PhiloGL.Vec3.distTo (s[0].point, sections[i - 1][0].point) / 64.0;
+        for (var j = 0; j < s.length; j++)
+            vertices = vertices.concat ([s[j].point.x, s[j].point.y, s[j].point.z])
+        var dS = PhiloGL.Vec3.distTo (s[0].point, s[s.length - 1].point);
+        for (var j = 0; j < s.length; j++)
+        {
+            var u1 = PhiloGL.Vec3.distTo (s[j].point, s[0].point) / dS;
+            var v1 = dYLast;
+            texCoord.push (u1);
+            texCoord.push (v1);
+        };
+    }
+
+    
+    for (var i = 0, lastSectionStart = 0; i < sections.length - 1; i++, lastSectionStart+= s1.length)
     {
         s1 = sections[i];
         s2 = sections[i + 1];
+        s2Start = lastSectionStart + s1.length;
+
         if (s1.length != s2.length)
         {
             alert ('false');
@@ -1184,49 +1208,54 @@ function buildCorridorModeFromSections (info)
         var rS2 = s2[s2.length - 1].point;
         var dS2 = PhiloGL.Vec3.distTo (lS2, rS2);
         var dBetween = PhiloGL.Vec3.distTo (lS1, lS2);
-        var dNext = dBetween / 64 + dYLast;
+        dNext = dBetween / 64.0 + dYLast;
 
+        //vertices = vertices.concat ([s1[0].point.x, s1[0].point.y, s1[0].point.z, 
+            //s2[0].point.x, s2[0].point.y, s2[0].point.z]);
+        //texCoord = texCoord.concat ([0.0, dYLast, 0.0, dNext]);
         for (var j = 0; j < s1.length - 1; j++)
         {
             var p1 = s1[j].point;
             var p2 = s1[j + 1].point;
             var p3 = s2[j].point;
             var p4 = s2[j + 1].point;
-            var vArray = [p1, p2, p3, p4];
+            vts = [p2.x, p2.y, p2.z, p4.x, p4.y, p4.z];
             //
-            //  s2[j]     s2[j+1]
+            //  p2     p4
             //  
-            //  s1[j]     s1[j+1]
+            //  p1     p3
             //
-            var vts = [p1.x, p1.y,  p1.z, 
-                       p2.x, p2.y,  p2.z,
-                       p3.x, p3.y,  p3.z,
-                       p4.x, p4.y,  p4.z];
             var  tc = [];
-            for (var n = 0; n < 4; n++)
-            {
-                dMax = dS1;
-                var leftPos = lS1;
-                if (n > 1)
-                {
-                    dMax = dS2;
-                    leftPos = lS2;
-                }
-                var u = PhiloGL.Vec3.distTo (vArray[n], leftPos) / dMax;
-                var v = dYLast;
-                if (n > 1)
-                    v = dNext;
-                //var u = Math.abs ((vertices[n*3] - minX) / maxDist) * factor;
-                //var v = Math.abs ((vertices[n*3 + 1] - minY) / maxDist) * factor;
-                tc[n*2] = u;
-                tc[n*2 + 1] = v;
-            }
-            texCoord = texCoord.concat (tc);
-            vertices = vertices.concat (vts);
-            var i1 = vertices.length / 3 - 4;
-            var i2 = i1 + 1;
-            var i3 = i1 + 2;
-            var i4 = i1 + 3;
+
+            var u1 = PhiloGL.Vec3.distTo (p2, lS1) / dS1;
+            var v1 = dYLast;
+            var u2 = PhiloGL.Vec3.distTo (p4, lS2) / dS2;
+            var v2 = dNext;
+            tc = [u1, v1, u2, v2];
+            //for (var n = 2; n < 4; n++)
+            //{
+            //    dMax = dS1;
+            //    var leftPos = lS1;
+            //    if (n > 1)
+            //    {
+            //        dMax = dS2;
+            //        leftPos = lS2;
+            //    }
+            //    var u = PhiloGL.Vec3.distTo (vArray[n], leftPos) / dMax;
+            //    var v = dYLast;
+            //    if (n > 1)
+            //        v = dNext;
+            //    //var u = Math.abs ((vertices[n*3] - minX) / maxDist) * factor;
+            //    //var v = Math.abs ((vertices[n*3 + 1] - minY) / maxDist) * factor;
+            //    tc[n*2] = u;
+            //    tc[n*2 + 1] = v;
+            //}
+            //texCoord = texCoord.concat (tc);
+            //vertices = vertices.concat (vts);
+            var i1 = lastSectionStart + j; //vertices.length / 3 - 4;
+            var i2 = s2Start + j;
+            var i3 = lastSectionStart + j + 1;
+            var i4 = s2Start + j + 1;
             indices = indices.concat ([i1, i2, i3, i2, i3, i4])
             dYLast = dNext;
         }
@@ -1234,7 +1263,7 @@ function buildCorridorModeFromSections (info)
 
 
 corridor = new PhiloGL.O3D.Model({
-            textures: ["road.png"],
+            textures: ["road2.png"],
             vertices: vertices,
             texCoords: texCoord,
             indices: indices,
