@@ -9,6 +9,7 @@ var surface;
 var corridor;
 var minX, maxX, minY, maxY;
 var treeModel;
+var cube;
 
  PhiloGL.Shaders.Fragment.Ufm = [
 
@@ -272,6 +273,7 @@ function animateObject(teapot) {
             x: 0, y: 0, z: -7
         }
     },
+    //cachePosition: false,
 
     textures:{
         src: ['teapot.jpg', "7.jpg",
@@ -293,7 +295,7 @@ function animateObject(teapot) {
       var gl = app.gl,
           canvas = app.canvas,
           program = app.program;
-          app.camera = new PhiloGL.Camera (45, 1, 0.1, 1000 );
+          app.camera = new PhiloGL.Camera (60, 1, 0.1, 1000 );
           view = new PhiloGL.Mat4;
           camera = app.camera;
           theCamera = app.camera;
@@ -369,6 +371,23 @@ function animateObject(teapot) {
       //program.setBuffer('triangle');
       //gl.drawArrays(gl.TRIANGLES, 0, 3);
       
+      cube = new PhiloGL.O3D.Model({
+              vertices: [7, 0, 15,
+              8, 0, 15,
+              8, 1, 15
+              ],
+
+              colors: [1, 0, 0, 1,
+              0, 1, 0, 1,
+              0, 0, 1, 1
+              ],
+
+              indices: [0, 1, 2]
+          });
+
+      cube.pickable = true;
+      app.scene.add (cube);
+
       var xmlDoc = $.parseXML($("#surface").html());
       $(xmlDoc).find("Surface").each (function ()
       {
@@ -572,7 +591,7 @@ function animateObject(teapot) {
        teapot.rotation= new PhiloGL.Vec3(90, 0, 45);
        teapot.position = theCamera.target;
        teapot.update ();
-       app.scene.camera.position = [0, 0, -50];
+       app.scene.camera.position = [0, 0, 30];
        app.scene.camera.target = [0, 0, 0];
        app.scene.camera.update ();
        app.scene.render ();
@@ -708,6 +727,7 @@ function animateObject(teapot) {
              //var model = this.scene.pick (e.x, e.y);
              if (model)
              {
+                 console.log (e.x + ", " +  e.y);
                  var p = model.parentEnt;
                  model.uniforms.colorUfm = [1, 1, 1, 1];
                  var points = [];
@@ -721,25 +741,38 @@ function animateObject(teapot) {
                          points[ind] = [model.vertices[ind * 3], model.vertices[ind * 3 + 1], model.vertices[ind * 3 + 2] ];
                          return points[ind];
                      };
-                     var pt1 = checkAndComputePoint (indices[i]);
-                     var pt2 = checkAndComputePoint (indices[i + 1]);
-                     var pt3 = checkAndComputePoint (indices[i + 3]);
+                     var pt1 = checkAndComputePoint (indices[i * 3]);
+                     var pt2 = checkAndComputePoint (indices[i * 3 + 1]);
+                     var pt3 = checkAndComputePoint (indices[i * 3 + 2]);
                      faces.push ([pt1, pt2, pt3]);
                  }
+
+                 var camera = this.camera;
+                 var mWorld = camera.view.mulMat4 (cube.matrix);
+                 var mPv1 = camera.projection.mulMat4 (mWorld);
+                 var dist1 = PhiloGL.Vec3.distTo (camera.position, camera.target);
+                 var width =  2 * Math.tan ((Math.PI * camera.fov / 360)) * dist1;
+                 var scaleDim = this.canvas.width / width;
+                 //scaleDim = scaleDim * 2 / camera.projection[0];
+                 //mPv = mPv1.scale (this.canvas.width / width, this.canvas.height / width, 1);
                  faces2 = faces.map (function (v){
                          return v.map (function (pt){
-                                 return camera.view.mulVec3 (pt);
+                                 var pt2 = mPv1.mulVec3 (pt);
+                                 pt2[0] *= scaleDim;
+                                 pt2[1] *= scaleDim;
+                                 return pt2;
                              });
                      });
                  //
                  // need to work on...
                  //
-                 var thex = this.canvas.width / 2 + e.x;
-                 var they = this.canvas.height / 2 + e.y;
+                 var thex =  e.x;
+                 var they =  e.y;
                  for (i = 0, l = faces2.length; i < l; i++)
                  {
                      var pts = faces2[i];
-                     if (isPointInTriangle ([they, thex, 0], pts[0], pts[1], pts[2]))
+                     //console.log (' p (' + pts[0][0] + ", " + pts[0][1] + ")");
+                     if (isPointInTriangle ([thex, they, 0], pts[0], pts[1], pts[2]))
                          {
                              console.log ("point is in triangle...", pts);
                          }
@@ -747,13 +780,16 @@ function animateObject(teapot) {
                  //console.log (p.type + " was picked");
              }
              updateProperties (p);
-             console.log (e.x + ", " +  e.y);
          },
          onMouseEnter: function(e, model) {
              model.uniforms.colorUfm = [1, 1, 1, 1];
          },
          onMouseLeave: function(e, model) {
              model.uniforms.colorUfm = [0.5, 0.5, 0.5, 1];
+         },
+         onMouseMove : function (e)
+         {
+             $("#logs").html("" + e.x +", " + e.y);
          },
          onDragStart: function(e) {
              pos = {
@@ -1118,8 +1154,10 @@ function buildCorridorModeFromSections (info)
     var factor = 1.0;
     if (maxDist > 256)
         factor = maxDist / 256 * 64;
-    
+
     var treespos = [];
+
+    var dYLast = 0;
 
     for (var i = 0; i < sections.length - 1; i++)
     {
@@ -1139,12 +1177,22 @@ function buildCorridorModeFromSections (info)
         if (treespos.length == 0 || (PhiloGL.Vec3.distTo (leftPos, treespos[treespos.length - 1][0]) > 50 && PhiloGL.Vec3.distTo (rightPos, treespos[treespos.length - 1][1]) > 50))
             treespos.push ([leftPos, rightPos]);
 
+        var lS1 = s1[0].point;
+        var rS1 = s1[s1.length - 1].point;
+        var dS1 = PhiloGL.Vec3.distTo (lS1, rS1);
+        var lS2 = s2[0].point;
+        var rS2 = s2[s2.length - 1].point;
+        var dS2 = PhiloGL.Vec3.distTo (lS2, rS2);
+        var dBetween = PhiloGL.Vec3.distTo (lS1, lS2);
+        var dNext = dBetween / 64 + dYLast;
+
         for (var j = 0; j < s1.length - 1; j++)
         {
             var p1 = s1[j].point;
             var p2 = s1[j + 1].point;
             var p3 = s2[j].point;
             var p4 = s2[j + 1].point;
+            var vArray = [p1, p2, p3, p4];
             //
             //  s2[j]     s2[j+1]
             //  
@@ -1157,8 +1205,19 @@ function buildCorridorModeFromSections (info)
             var  tc = [];
             for (var n = 0; n < 4; n++)
             {
-                var u = Math.abs ((vertices[n*3] - minX) / maxDist) * factor;
-                var v = Math.abs ((vertices[n*3 + 1] - minY) / maxDist) * factor;
+                dMax = dS1;
+                var leftPos = lS1;
+                if (n > 1)
+                {
+                    dMax = dS2;
+                    leftPos = lS2;
+                }
+                var u = PhiloGL.Vec3.distTo (vArray[n], leftPos) / dMax;
+                var v = dYLast;
+                if (n > 1)
+                    v = dNext;
+                //var u = Math.abs ((vertices[n*3] - minX) / maxDist) * factor;
+                //var v = Math.abs ((vertices[n*3 + 1] - minY) / maxDist) * factor;
                 tc[n*2] = u;
                 tc[n*2 + 1] = v;
             }
@@ -1169,6 +1228,7 @@ function buildCorridorModeFromSections (info)
             var i3 = i1 + 2;
             var i4 = i1 + 3;
             indices = indices.concat ([i1, i2, i3, i2, i3, i4])
+            dYLast = dNext;
         }
     }
 
