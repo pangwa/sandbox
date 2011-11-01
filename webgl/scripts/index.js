@@ -728,7 +728,7 @@ function animateObject(teapot) {
              if (model)
              {
                  //console.log (e.x + ", " +  e.y);
-                 //var p = model.parentEnt;
+                 var p = model.parentEnt;
                  //model.uniforms.colorUfm = [1, 1, 1, 1];
                  //var points = [];
                  //var faces = [];
@@ -1093,6 +1093,9 @@ function buildCorridorFromAlign(alignEnt)
 {
     var sections = [];
     var minX, minY, maxX, maxY;
+    var isFirst = true;
+    var removedIndices = [];
+    var sectionPtArrayNew = [];
     $(alignEnt.node.find ("CrossSects")).children().each (function ()
     {
         var station = parseFloat($(this).attr('sta'));
@@ -1115,6 +1118,27 @@ function buildCorridorFromAlign(alignEnt)
         secPointsArray.sort (function(a, b) {
                 return  a.offset - b.offset;
             });
+        if (isFirst)
+        {
+            sectionPtArrayNew.push (secPointsArray[0]);
+            removedIndices .push (false);
+            for (i = 1; i < secPointsArray.length; i++)
+            {
+                removedIndices.push (secPointsArray[i].offset == secPointsArray[i-1].offset);
+                if (secPointsArray[i].offset != secPointsArray[i-1].offset)
+                    sectionPtArrayNew.push (secPointsArray[i]);
+            }
+        }
+        else
+        {
+            sectionPtArrayNew = [];
+            for (i = 0; i < secPointsArray.length; i++)
+            {
+                if (!removedIndices[i])
+                    sectionPtArrayNew.push (secPointsArray[i]);
+            }
+        }
+        secPointsArray = sectionPtArrayNew;
         $(secPointsArray).each (function (i) {
                 var ptOffset = seg.findXYAtOffset (pt, secPointsArray[i].offset);
                 ptOffset.z = secPointsArray[i].elev + ptZCenter + 3;
@@ -1125,6 +1149,7 @@ function buildCorridorFromAlign(alignEnt)
                 maxY = myMax (maxY, ptOffset.y);
             });
         sections.push (secPointsArray);
+        isFirst = false;
     });
 
     return buildCorridorModeFromSections({
@@ -1415,3 +1440,4 @@ function buildCorridor (align)
 }
 
                  
+        
