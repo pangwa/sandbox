@@ -806,7 +806,16 @@ function animateObject(teapot) {
 
        updateLogs();
        //setInterval(draw, 1000/60);
+       var totalFrames = 0;
+       var lastTotalFrames = 0;
+       function animate() {
+           PhiloGL.Fx.requestAnimationFrame( animate );
+           gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+           app.scene.render ();
+           totalFrames ++;
+       };
 
+       animate ();
        setInterval (updateLogs, 1000/3);
        var it;
        var itStat;
@@ -819,6 +828,7 @@ function animateObject(teapot) {
               //     $("#stop").val ('resume');
               //     $("#stop").text ('resume');
                    it = undefined;
+                   itStat = undefined;
                }
               // else
               // {
@@ -858,58 +868,81 @@ function animateObject(teapot) {
            }
            var curIndex = 0;
            //create a Fx instance
-           dimFx = new PhiloGL.Fx({
-                   duration: smpPts.length /60 * 1000,
-                   transition: PhiloGL.Fx.Transition.linear,
-                   onCompute: function(delta) {
-                       if (curIndex < (smpPts.length - 1))
-                       {
-                           var nextPt = smpPts[curIndex + 1];
-                           var c = pointFromToDist (smpPts[curIndex], nextPt, 20);
-                           var p = smpPts[curIndex].clone();
-                           c.z = nextPt.z + 10;
-                           p.z += 15;
-                           theCamera.position = p;
-                           theCamera.up = u;
-                           theCamera.target = c;
-                           theCamera.update ();
-                           //teapot.position = theCamera.target.clone ();
-                          // if (treeModel)
-                          // {
-                          //     treeModel.position = theCamera.target.clone ();
-                          //     treeModel.position.z += 2.5;
-                          //     //treeModel.update ();
-                          // }
-                           //teapot.position.z += 2.0;
-                           //teapot.scale = [10.1, 10.1, 20.1];
-                           //teapot.scale = [0.01, 0.01, 0.01];
-                           //teapot.update();
-                           //theCamera.view.lookAt (p, c, u);
-                           gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                           app.scene.render ();
-                           totalFrames ++;
-                           //drawWorld (app);
-                           curIndex ++;
-                       }
-                   },
-                   onComplete: function() {
-                       // do the annomation
-                       clearInterval (it);
-                       clearInterval (itStat);
-                   }
-               });
+           //dimFx = new PhiloGL.Fx({
+           //        duration: smpPts.length /60 * 1000,
+           //        transition: PhiloGL.Fx.Transition.linear,
+           //        onCompute: function(delta) {
+           //            if (curIndex < (smpPts.length - 1))
+           //            {
+           //                var nextPt = smpPts[curIndex + 1];
+           //                var c = pointFromToDist (smpPts[curIndex], nextPt, 20);
+           //                var p = smpPts[curIndex].clone();
+           //                c.z = nextPt.z + 10;
+           //                p.z += 15;
+           //                theCamera.position = p;
+           //                theCamera.up = u;
+           //                theCamera.target = c;
+           //                theCamera.update ();
+           //                //teapot.position = theCamera.target.clone ();
+           //               // if (treeModel)
+           //               // {
+           //               //     treeModel.position = theCamera.target.clone ();
+           //               //     treeModel.position.z += 2.5;
+           //               //     //treeModel.update ();
+           //               // }
+           //                //teapot.position.z += 2.0;
+           //                //teapot.scale = [10.1, 10.1, 20.1];
+           //                //teapot.scale = [0.01, 0.01, 0.01];
+           //                //teapot.update();
+           //                //theCamera.view.lookAt (p, c, u);
+           //                //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+           //                //app.scene.render ();
+           //                totalFrames ++;
+           //                //drawWorld (app);
+           //                curIndex ++;
+           //            }
+           //        },
+           //        onComplete: function() {
+           //            // do the annomation
+           //            clearInterval (it);
+           //            clearInterval (itStat);
+           //        }
+           //    });
 
-           var totalFrames = 0;
+           function updateCamera ()
+           {
+               if (!it)
+                   return;
+               if (curIndex < (smpPts.length - 1))
+                   var nextPt = smpPts[curIndex + 1];
+               else
+               {
+                   clearInterval (it);
+                   it = undefined;
+                   return;
+               }
+               var c = pointFromToDist (smpPts[curIndex], nextPt, 20);
+               var p = smpPts[curIndex].clone();
+               c.z = nextPt.z + 10;
+               p.z += 15;
+               theCamera.position = p;
+               theCamera.up = u;
+               theCamera.target = c;
+               theCamera.update ();
+               curIndex ++;
+           };
+
            //start the animation with custom `from` and `to` properties.
-           dimFx.start({
-                   from: 0,
-                   to: smpPts.length - 2 
-               });
+           //dimFx.start({
+           //        from: 0,
+           //        to: smpPts.length - 2 
+           //    });
 
            $("#stop").val('stop');
            $("#stop").text ('stop');
 
-           var lastTotalFrames = 0;
+           totalFrames = 0;
+           lastTotalFrames = 0;
            itStat = setInterval (function (){
                    var frames = totalFrames - lastTotalFrames;
                    lastTotalFrames = totalFrames;
@@ -919,9 +952,12 @@ function animateObject(teapot) {
            //        dimFx.step ();
            //        PhiloGL.Fx.requestAnimationFrame (callback);
            //    });
-           it = setInterval(function() {
-                   dimFx.step();
-               }, 1000 / 60);
+           
+           it = setInterval (updateCamera, 1000.0/60.0);
+           //it = setInterval(function() {
+           //        dimFx.step();
+           //    }, 1000 );
+           //PhiloGL.Fx.requestAnimationFrame( animate );
        }
     },
      events: {
