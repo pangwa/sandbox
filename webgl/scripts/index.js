@@ -521,7 +521,7 @@ function animateObject(teapot) {
                //var value = $(this);
                var name = $(this).attr("name");
                $("#alignmentlist").append($('<option></option>').val(name).html(name));
-               var align = handleAlignment ($(this));
+               var align = handleAlignment ($(this), true);
                if (align["corridor"])
                {
                    var corridorEnttity = new AecEntity([align["corridor"] ], "corridor");
@@ -544,7 +544,7 @@ function animateObject(teapot) {
                var align = $(xmlDoc).find ('Alignment[name="' + $("#alignmentlist").val() +'"]');
                if (!align)
                    alert ("can't find alignment with name: " +$("#alignmentlist").val()); 
-               var align = handleAlignment (align);
+               var align = handleAlignment (align, false);
                if (align["samplePoints"])
                {
                    //$.map (align["samplePoints"], function (v)
@@ -583,6 +583,214 @@ function animateObject(teapot) {
               // log += "Total O3D Models: " + database.scene.models.length + "</br>";
               // $("#logs").html (log);
            });
+
+
+       var loadDatabaseFromXmlDoc = function (xmlDoc)
+       {
+           var database = new AecDatabase (app);
+           $(xmlDoc).find("Surface").each (function ()
+               {
+                   $(this).find('P').each (function()
+                       {
+                           var id = parseInt($(this).attr("id"), 10);
+                           var pt = $.map($(this).text().split(" "), parseFloat);
+                           if (pt.length != 3)
+                               console.log ('error');
+                           surfacePoints[id] = pt;
+                       }
+                   );
+
+                   $(this).find('F').each (function(){
+                           if ($(this).attr('i') != "1")
+                           {
+                               var pts = $.map($(this).text().split(' '), function(idx)
+                                   {
+                                       return parseInt (idx, 10);
+                                   });
+                               faces.push (pts);
+                           }
+                       });
+                   var vertices = new Float32Array(surfacePoints.length * 3);
+                   $(surfacePoints).each(function (i)
+                       {
+                           if (surfacePoints[i])
+                           {
+                               //
+                               // swap x, y
+                               vertices[i * 3] = surfacePoints[i][1];
+                               vertices[i * 3 + 1] = surfacePoints[i][0];
+                               vertices[i * 3 + 2] = surfacePoints[i][2];
+                               minX = minX != undefined ? Math.min(minX, vertices[i*3]) : vertices[i * 3];
+                               minY = minY != undefined ? Math.min(minY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
+                               maxX = maxX != undefined ? Math.max(maxX, vertices[i*3]) : vertices[i * 3];
+                               maxY = maxY != undefined ? Math.max(maxY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
+                           }
+                           else
+                           {
+                               // vertices[i * 3] = 0;
+                               // vertices[i * 3+ 1] = 0;
+                               // vertices[i * 3+ 2] = 0;
+                           }
+                       });
+
+                   var uvMatrix = [];
+
+                   var oldRender = app.scene.render;
+                   //app.scene.render = function ()
+                   //{
+                   //}
+                   var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
+                   $(surfacePoints).each(function (i)
+                       {
+                           var u = Math.abs ((vertices[i*3] - minX) / maxDist);
+                           var v = Math.abs ((vertices[i*3 + 1] - minY) / maxDist);
+                           uvMatrix[i] = [u, v];
+                       });
+                   surface.vertices = vertices;
+                   var arrayTemp = new Array(faces.length * 3);
+                   var idx = 0;
+                   $(faces).each (function (i){
+                           $.map(faces[i], function(v) {
+                                   arrayTemp[idx++] = v;
+                               });
+                       });
+
+                   surface.indices = arrayTemp;
+
+                   var textCoords = new Float32Array(surfacePoints.length * 2);
+                   var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
+                   var factor = 1.0;
+                   if (maxDist > 256)
+                       factor = (maxDist / 256* 8);
+
+                   for (var i = 0; i < surfacePoints.length; i++)
+                   {
+                       textCoords[i*2] = uvMatrix [i][0] * factor;
+                       textCoords[i*2 + 1] = uvMatrix [i][1] * factor;
+                   }
+                   //for ( i = 0; i < faces.length; i++)
+                   //{
+                   //    for (j = 0; j < 6; j++)
+                   //        textCoords [i*6 + j] = iTexCoords[j];
+                   //    
+                   //    var uv = getUv(faces[i]);
+                   //    textCoords[i*6] = uv[0]
+                   //    textCoords[i*6 + 1] = uv[1];
+                   //    //uv = getUv(faces[i][1]);
+                   //    textCoords[i*6 + 2] = uv[2];
+                   //    textCoords[i*6 + 3] = uv[3];
+                   //    //uv = getUv(faces[i][2]);
+                   //    textCoords[i*6 + 4] = uv[4];
+                   //    textCoords[i*6 + 5] = uv[5];
+                   //}
+
+                   surface.texCoords = textCoords;
+
+                   //set buffers with cube data
+                   var surfaceEnt = new AecEntity ([surface], "surface");
+                   surfaceEnt.name = $(this).attr ('name');
+                   //should be only one definition node
+                   $(this).find ('Definition').each (function (){
+                           $.each (this.attributes, function (i, attrib){
+                                   surfaceEnt.properties.push ( {propname: attrib.name, value : attrib.value});
+                               });
+                       });
+                   surfaceEnt.pickable = true;
+                   surfaceEnt.update ();
+                   surfaceEnt.addToDb (database);
+               });
+           $("#alignmentlist").empty ();
+           $(xmlDoc).find('Alignment').each (function(){
+                   //samplePoints.push (handleAlignment ($(this)));
+                   //var value = $(this);
+                   var name = $(this).attr("name");
+                   $("#alignmentlist").append($('<option></option>').val(name).html(name));
+                   var align = handleAlignment ($(this), true);
+                   if (align["corridor"])
+                   {
+                       var corridorEnttity = new AecEntity([align["corridor"] ], "corridor");
+                       var corridorNode = $(xmlDoc).find ("Roadway[alignmentRefs='" + name + "']")[0];
+                       if (corridorNode)
+                       {
+                           corridorEnttity.name = $(corridorNode).attr ('name'); 
+                           $.each (corridorNode.attributes, function (i, attrib){
+                                   if (attrib.name != 'name')
+                                       corridorEnttity.properties.push ( {propname: attrib.name, value : attrib.value});
+                               });
+                       }
+                       corridorEnttity.pickable = true;
+                       corridorEnttity.update ();
+                       corridorEnttity.addToDb (database);
+                   }
+               });
+
+           $("#drive").unbind ('click');
+           $("#drive").click (function (e){
+                   var align = $(xmlDoc).find ('Alignment[name="' + $("#alignmentlist").val() +'"]');
+                   if (!align)
+                       alert ("can't find alignment with name: " +$("#alignmentlist").val()); 
+                   var align = handleAlignment (align, false);
+                   if (align["samplePoints"])
+                   {
+                       driveWithSamplePoints (align["samplePoints"]);
+                   }
+           });
+       return database;
+       }
+
+       $("#loadfile").click (function (e)
+           {
+               $.ajax ("/landfiles.json",
+                   {
+                       datatype : "json"
+                   }
+               ).done (function (data) {
+                       $("#dialogdiv").html (""); //clear
+                       var listTable = $("<table>");
+                       $("#dialogdiv").append (listTable);
+                       listTable.append ("<thead><tr><th>Name</th><th>File</th><th> </th></tr></thead>");
+                       $(data).each (function (i,v){
+                               var theTr = $("<tr>");
+                               theTr.append ("<td>" + v.name + "</td>");
+                               theTr.append ("<td>" + v.landfilename + "</td>");
+                               theTr.append ("<td></td>");
+                               var tdFile = $("<button>View</button>");
+                               tdFile.click (function ()
+                                   {
+                                       $("#dialogdiv").html ("loading..."); 
+                                       $.ajax (v.landfileurl,
+                                           {
+                                               dataType : "xml"
+                                           }).done (function (data)
+                                               {
+                                                   $("#dialogdiv").html ("Processing..."); 
+                                                   database.clear ();
+                                                   database = loadDatabaseFromXmlDoc (data);
+                                                   chooseFileDialog.dialog ('close');
+                                               })
+                                           .fail (function (e, textStatus, errorThrown)
+                                               {
+                                                   $("#dialogdiv").html ("Error while loading file as xml..."); 
+                                               });
+                                   });
+                               theTr.append (tdFile);
+                               listTable.append (theTr);
+                           });
+
+                       chooseFileDialog = $('#dialogdiv')
+                       .dialog({
+                               autoOpen: true,
+                               modal: true,
+                               title: 'Files List',
+                               width: 400,
+                               height: 400
+                           });
+                   })
+               .fail (function (e, textStatus, errorThrown) {
+                       alert ('fail');
+                   });
+           });
+
        camera.view.lookAt (p, c, u);
        var curIndex = 0;
        //drawWorld (app);
@@ -834,7 +1042,10 @@ function pointFromToDist (ptStart, ptEnd, dist)
 {
     var length = ptStart.distTo(ptEnd);
     if (length == 0)
+    {
+        console.log ('error, dist is 0');
         alert (false);
+    }
 
     var edge = ptEnd.sub(ptStart).unit ();
     var move = $.map(edge, function (x) {return x * dist;});
@@ -870,7 +1081,22 @@ function getSamplePointsLine (pStart, pEnd, interval)
         retArray.push (pEnd);
     return retArray;
 }
+var dblTol = 1e-6;
 
+function fuzzyZero (dblValue)
+{
+    return (dblValue < -dblTol  ||  dblValue > dblTol) ? false : true;
+};
+
+function fuzzyEq (dFirst, dSec)
+{
+    return fuzzyZero (dFirst - dSec);
+};
+function fuzzyGreaterEqThan (dFirst, dSec)
+{
+    var d = dFirst - dSec;
+    return d > dblTol || fuzzyEq (dFirst, dSec); ;
+};
 
 function getSamplePointsCurve(pStart, pEnd, ptCenter, radius, length, bClockWise, interval)
 {
@@ -949,9 +1175,10 @@ var tagHandler =  {Line: function(node)
         };
         this.findPtAtStn = function (stn)
         {
-            if (stn < this.startStn || stn > this.endStn)
-                alert (false);
-            return pointFromToDist (this.ptStart, this.ptEnd, stn - this.startStn);
+            if (fuzzyGreaterEqThan(stn, this.startStn) || fuzzyGreaterEqThan (this.endStn, stn))
+                return pointFromToDist (this.ptStart, this.ptEnd, stn - this.startStn);
+            else
+                console.log ('wrong station passed');
         };
     };
 
@@ -975,27 +1202,32 @@ var tagHandler =  {Line: function(node)
         };
         this.findPtAtStn = function (stn)
         {
-            if (stn < this.startStn || stn > this.endStn)
-                alert (false);
-            var interval = stn - this.startStn;
-            var angle = interval / this.radius;
-            if (!this.bClockwise)
-                angle = -angle;
-
-            var ptStartNoOffset = this.ptStart.sub(this.ptCenter);
-            var ptCenter = this.ptCenter;
-
-            function ptByRotate (angle)
+            if (fuzzyGreaterEqThan(stn, this.startStn) || fuzzyGreaterEqThan (this.endStn, stn))
             {
-                var cosp = Math.cos (angle);
-                var sinp = Math.sin (angle);
-                var newPt = ptStartNoOffset.clone();
-                newPt.x = ptStartNoOffset.x * cosp +  ptStartNoOffset.y * sinp;
-                newPt.y = ptStartNoOffset.y * cosp - ptStartNoOffset.x * sinp ;
-                return newPt.$add (ptCenter);
-            };
+                var interval = stn - this.startStn;
+                var angle = interval / this.radius;
+                if (!this.bClockwise)
+                    angle = -angle;
 
-            return ptByRotate(angle);
+                var ptStartNoOffset = this.ptStart.sub(this.ptCenter);
+                var ptCenter = this.ptCenter;
+
+                function ptByRotate (angle)
+                {
+                    var cosp = Math.cos (angle);
+                    var sinp = Math.sin (angle);
+                    var newPt = ptStartNoOffset.clone();
+                    newPt.x = ptStartNoOffset.x * cosp +  ptStartNoOffset.y * sinp;
+                    newPt.y = ptStartNoOffset.y * cosp - ptStartNoOffset.x * sinp ;
+                    return newPt.$add (ptCenter);
+                };
+
+                return ptByRotate(angle);
+            }
+            else
+            {
+                console.log ('wrong station passed');
+            }
         };
     };
 
@@ -1044,7 +1276,7 @@ var tagHandler =  {Line: function(node)
             var geo;
             $(this.geomotries).each (function()
                 {
-                    if (this.startStn <= stn && this.endStn >= stn)
+                    if (fuzzyGreaterEqThan (stn , this.startStn)  && fuzzyGreaterEqThan(this.endStn, stn))
                     {
                         geo = this;
                         return false;
@@ -1101,6 +1333,7 @@ function buildCorridorFromAlign(alignEnt)
         var station = parseFloat($(this).attr('sta'));
         var ptZCenter = alignEnt.findZAtstation (station);
         var seg = alignEnt.findGeomAtStation(station);
+        
         var pt = seg.findPtAtStn (station);
         var secPoints = {}; //offset- elev
         $(this).find("CrossSectPnt").each (function ()
@@ -1191,6 +1424,8 @@ function buildCorridorModeFromSections (info)
     for (var i = 0; i < sections.length; i++)
     {
         var s =  sections[i];
+        if (!s[0])
+            continue;
         if (i > 0)
             dYLast += PhiloGL.Vec3.distTo (s[0].point, sections[i - 1][0].point) / 64.0;
         for (var j = 0; j < s.length; j++)
@@ -1298,11 +1533,11 @@ corridor = new PhiloGL.O3D.Model({
     return corridor;
 }
 
-function handleAlignment (align)
+function handleAlignment (align, buildCorridor)
 {
     var alignEnt = new Alignment (align);
     var theCorridor;
-    if (corridor == undefined)
+    if (buildCorridor)
     {
         theCorridor = buildCorridorFromAlign (alignEnt);
     }
@@ -1437,7 +1672,4 @@ function buildCorridor (align)
 
             }
         });
-}
-
-                 
-        
+};
