@@ -127,9 +127,9 @@ AecDatabase.prototype.clear = function ()
         }
     }
     this.entities = []; //reset to empty
-    var gl = this.app.gl;
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    this.scene.render ();
+    //var gl = this.app.gl;
+    //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    //this.scene.render ();
 }
 
 AecDatabase.prototype.initEntity = function (entity)
@@ -342,8 +342,8 @@ function animateObject(teapot) {
                                       //        //app.scene.add (this);
                                       //    });
                                       //alert("All images and textures loaded!");
-                                      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                                      app.scene.render ();
+                                      //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                                      //app.scene.render ();
                                   }
                               });
                           //new 
@@ -568,8 +568,8 @@ function animateObject(teapot) {
                                });
                            //app.scene.add (newModel);
                        });
-                   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                   app.scene.render ();
+                   //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                   //app.scene.render ();
                }
            });
 
