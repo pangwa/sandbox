@@ -33,7 +33,7 @@ width: 260;
 
 button.ui-button-icon-only { width: 16px; } 
 .ui-icon-car{
-background-image: url(/images/car2.png) !important;
+background-image: url(../images/car2.png) !important;
 background-position: -2px -2px;
 }
 .ui-icon-stop{
@@ -212,7 +212,7 @@ font-family: verdana, helvetica, arial, sans-serif;
 color:#fff;
 padding: 20px 40px 20px 15px;
 font-weight: 700;
-background:#333333 url(/images/plus.png) 85% 55% no-repeat;
+background:#333333 url(../images/plus.png) 85% 55% no-repeat;
 border:1px solid #444444;
 -moz-border-radius-topright: 20px;
 -webkit-border-top-right-radius: 20px;
@@ -233,7 +233,7 @@ font-family: verdana, helvetica, arial, sans-serif;
 color:#fff;
 padding: 20px 40px 20px 20px;
 font-weight: 700;
-background:#222222 url(/images/plus.png) 85% 55% no-repeat;
+background:#222222 url(../images/plus.png) 85% 55% no-repeat;
 border:1px solid #444444;
 -moz-border-radius-topright: 20px;
 -webkit-border-top-right-radius: 20px;
@@ -245,7 +245,7 @@ display: block;
 }
 
 a.active.trigger {
-background:#222222 url(/images/minus.png) 85% 55% no-repeat;
+background:#222222 url(../images/minus.png) 85% 55% no-repeat;
 }
 
 .columns{
@@ -291,11 +291,11 @@ list-style-type: none;
 }
  
 /* this is the button images */
-li.stop {background:url(/images/stop.png) no-repeat 0 -32px;}
-li.drive {background:url(/images/car4.png) no-repeat}
-li.loadfile {background:url(/images/tabFolder.gif) no-repeat 0 -32px;}
-li.props {background:url(/images/propety.png) no-repeat 0 -32px;}
-li.random {background:url(/images/tabRandom.gif) no-repeat 0 -32px;}
+li.stop {background:url(../images/stop.png) no-repeat 0 -32px;}
+li.drive {background:url(../images/car4.png) no-repeat 0 -32px;}
+li.loadfile {background:url(../images/tabFolder.gif) no-repeat 0 -32px;}
+li.props {background:url(../images/propety.png) no-repeat 0 -32px;}
+li.random {background:url(../images/tabRandom.gif) no-repeat 0 -32px;}
  
 li.mouseover {background-position:0 0;}
 li.mouseout {background-position:0 -32px;}
@@ -312,7 +312,7 @@ li.selected {background-position:0 0;}
 }
  
 .boxBottom {
-    background:url(/images/boxBottom.gif) no-repeat;
+    background:url(../images/boxBottom.gif) no-repeat;
     height:11px;
 }
  
@@ -334,7 +334,7 @@ li.selected {background-position:0 0;}
     margin:0 10px 0 25px;
     padding:0;
     width:190px;
-    list-style-image:url(/images/arrow.gif)
+    list-style-image:url(../images/arrow.gif)
 }
  
 .boxBody div li {

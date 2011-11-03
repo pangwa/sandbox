@@ -268,14 +268,87 @@ function setupEvents ()
                 //Add and remove class, Personally I dont think this is the right way to do it,
                 //if you have better ideas to toggle it, please comment   
                 $(this).addClass('mouseover');
-                $(this).removeClass('mouseout');  
+                //$(this).removeClass('mouseout');  
 
             }).mouseout(function() {
 
                     //Add and remove class
-                    $(this).addClass('mouseout');
+                    //$(this).addClass('mouseout');
                     $(this).removeClass('mouseover');   
 
+                });
+            $("#drive").qtip({
+                    content: {
+                        text: 'Click this button to simulate driving on a road',
+                        title: {
+                            text: "Drive along a road"
+                        }
+                    },
+                    style: {
+                        name: "dark",
+                        border : {
+                            border : 1,
+                            radius : 2
+                        }
+                    },
+                    position: { target: "mouse" },
+                    show: 'mouseover',
+                    hide: 'mouseout'
+                });
+            $("#stop").qtip({
+                    content: {
+                        text: "Stop the driving",
+                        title: {
+                            text: "Stop"
+                        }
+                    },
+                    style: {
+                        name: "dark",
+                        border : {
+                            border : 1,
+                            radius : 2
+                        }
+                    },
+                    position: { target: "mouse" },
+                    show: 'mouseover',
+                    hide: 'mouseout'
+                });
+            $("#loadfile").qtip({
+                    content: {
+                        text: "Select a file from your file store and simulate in the viewer",
+                        title: {
+                            text: "Load file"
+                        }
+                    },
+                    style: {
+                        name: "dark",
+                        border : {
+                            border : 1,
+                            radius : 2
+                        }
+                    },
+                    position: { target: "mouse" },
+                    show: 'mouseover',
+                    hide: 'mouseout'
+                });
+
+            $("#props").qtip({
+                    content: {
+                        text: "Show the properties of the selected object",
+                        title: {
+                            text: "Show properties"
+                        }
+                    },
+                    style: {
+                        name: "dark",
+                        border : {
+                            border : 1,
+                            radius : 2
+                        }
+                    },
+                    position: { target: "mouse" },
+                    show: 'mouseover',
+                    hide: 'mouseout'
                 });
 };
 
