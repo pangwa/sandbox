@@ -277,7 +277,7 @@ function animateObject(teapot) {
 
     textures:{
         src: ['teapot.jpg', "7.jpg",
-        "road.png", "road5.jpg", "road2.png"],
+        "road.png", "road5.jpg", "road2.png", "images/sky.jpg"],
         parameters: [{
           name: 'TEXTURE_MAG_FILTER',
           value: 'LINEAR'
@@ -295,7 +295,7 @@ function animateObject(teapot) {
       var gl = app.gl,
           canvas = app.canvas,
           program = app.program;
-          app.camera = new PhiloGL.Camera (60, 1, 0.1, 1000 );
+          app.camera = new PhiloGL.Camera (60, 1, 0.01, 100000);
           view = new PhiloGL.Mat4;
           camera = app.camera;
           theCamera = app.camera;
@@ -371,21 +371,87 @@ function animateObject(teapot) {
       //program.setBuffer('triangle');
       //gl.drawArrays(gl.TRIANGLES, 0, 3);
       
-      cube = new PhiloGL.O3D.Model({
-              vertices: [7, 0, 15,
-              8, 0, 15,
-              8, 1, 15
+      cube = new PhiloGL.O3D.Cube({
+              vertices: [-1, -1, 1,
+              1, -1, 1,
+              1, 1, 1,
+              -1, 1, 1,
+
+              -1, -1, -1,
+              -1, 1, -1,
+              1, 1, -1,
+              1, -1, -1,
+
+              -1, 1, -1,
+              -1, 1, 1,
+              1, 1, 1,
+              1, 1, -1,
+
+              -1, -1, -1,
+              1, -1, -1,
+              1, -1, 1,
+              -1, -1, 1,
+
+              1, -1, -1,
+              1, 1, -1,
+              1, 1, 1,
+              1, -1, 1,
+
+              -1, -1, -1,
+              -1, -1, 1,
+              -1, 1, 1,
+              -1, 1, -1],
+
+              texCoords: [
+              // Front face
+              0.0, 0.0,
+              1.0, 0.0,
+              1.0, 1.0,
+              0.0, 1.0,
+
+              // Back face
+              1.0, 0.0,
+              1.0, 1.0,
+              0.0, 1.0,
+              0.0, 0.0,
+
+              // Top face
+              0.0, 1.0,
+              0.0, 0.0,
+              1.0, 0.0,
+              1.0, 1.0,
+
+              // Bottom face
+              1.0, 1.0,
+              0.0, 1.0,
+              0.0, 0.0,
+              1.0, 0.0,
+
+              // Right face
+              1.0, 0.0,
+              1.0, 1.0,
+              0.0, 1.0,
+              0.0, 0.0,
+
+              // Left face
+              0.0, 0.0,
+              1.0, 0.0,
+              1.0, 1.0,
+              0.0, 1.0
               ],
 
-              colors: [1, 0, 0, 1,
-              0, 1, 0, 1,
-              0, 0, 1, 1
-              ],
-
-              indices: [0, 1, 2]
+              indices: [0, 1, 2, 0, 2, 3,
+              4, 5, 6, 4, 6, 7,
+              8, 9, 10, 8, 10, 11,
+              12, 13, 14, 12, 14, 15,
+              16, 17, 18, 16, 18, 19,
+              20, 21, 22, 20, 22, 23],
+              textures: ["images/sky.jpg"],
           });
 
-      cube.pickable = true;
+      cube.scale = new PhiloGL.Vec3(10000, 10000, 10000);
+      cube.update ();
+      cube.pickable = false;
       app.scene.add (cube);
 
       var xmlDoc = $.parseXML($("#surface").html());
@@ -918,6 +984,8 @@ function animateObject(teapot) {
                else
                {
                    clearInterval (it);
+                   clearInterval (itStat);
+                   itStat = undefined;
                    it = undefined;
                    return;
                }
