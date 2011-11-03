@@ -6,10 +6,351 @@ width: 260;
 
 #content
 {
-    margin-left: 270;
+    margin-left: 10;
+    width: 900;
+    height: 900;
+	float: left;
+	position: absolute;
+    top:10;
+    left:50;
+	z-index : 1;
+}
+
+#logspane
+{
+    height: 300px;
+	position: absolute;
+    top:10;
+	bottom: 10px;
+	right: 10px;
 }
 
 #logs
 {
     height: 300px;
+	width: 280px;
 }
+
+button.ui-button-icon-only { width: 16px; } 
+.ui-icon-car{
+background-image: url(/images/car2.png) !important;
+background-position: -2px -2px;
+}
+.ui-icon-stop{
+background-position: 0px -176px;
+}
+
+body {
+background:#1a1a1a;
+text-align:left;
+color:#666;
+width:700px;
+font-size:14px;
+font-family:georgia, 'time new romans', serif;
+margin:0 auto;
+padding:0;
+}
+
+a:focus {
+outline: none;
+}
+
+h1 {
+font-size: 34px;
+font-family: verdana, helvetica, arial, sans-serif;
+letter-spacing:-2px;
+color:#9FC54E;
+font-weight:700;
+padding:20px 0 0;
+}
+
+h2 {
+font-size: 24px;
+font-family: verdana, helvetica, arial, sans-serif;
+color:#444444;
+font-weight: 400;
+padding: 0 0 10px;
+}
+
+h3 {
+font-size:14px;
+font-family:verdana, helvetica, arial, sans-serif;
+letter-spacing:-1px;
+color:#fff;
+font-weight: 700;
+text-transform:uppercase;
+margin:0;
+padding:8px 0 8px 0;
+}
+
+img{
+float: right;
+margin: 3px 3px 6px 8px;
+padding: 5px;
+background: #222222;
+border: 1px solid #333333;
+}
+
+p {
+color:#cccccc;
+line-height:22px;
+padding: 0 0 10px;
+margin: 20px 0 20px 0;
+}
+
+img {
+border:none;
+}
+
+#container {
+clear: both;
+margin: 0;
+padding: 0;
+}
+
+#container a{
+float: right;
+background: #9FC54E;
+border: 1px solid #9FC54E;
+-moz-border-radius-topright: 20px;
+-webkit-border-top-right-radius: 20px;
+-moz-border-radius-bottomleft: 20px;
+-webkit-border-bottom-left-radius: 20px;
+text-decoration: none;
+font-size: 16px;
+letter-spacing:-1px;
+font-family: verdana, helvetica, arial, sans-serif;
+color:#fff;
+padding: 20px;
+font-weight: 700;
+}
+
+#container a:hover{
+float: right;
+background: #a0a0a0;
+border: 1px solid #cccccc;
+-moz-border-radius-topright: 20px;
+-webkit-border-top-right-radius: 20px;
+-moz-border-radius-bottomleft: 20px;
+-webkit-border-bottom-left-radius: 20px;
+text-decoration: none;
+font-size: 16px;
+letter-spacing:-1px;
+font-family: verdana, helvetica, arial, sans-serif;
+color:#fff;
+padding: 20px;
+font-weight: 700;
+}
+
+.content {
+font-style:normal;
+font-family:helvetica, arial, verdana, sans-serif;
+color:#ffffff;
+background:#333333;
+border:1px solid #444444;
+-moz-border-radius-topright: 20px;
+-webkit-border-top-right-radius: 20px;
+-moz-border-radius-bottomleft: 20px;
+-webkit-border-bottom-left-radius: 20px;
+margin: 30px 0 50px;
+padding: 15px 0;
+}
+
+.content p {
+margin: 10px 0;
+padding: 15px 20px;
+}
+
+.panel {
+position: absolute;
+top: 50px;
+left: 0;
+z-index:2;
+display: none;
+background: #000000;
+border:1px solid #111111;
+-moz-border-radius-topright: 20px;
+-webkit-border-top-right-radius: 20px;
+-moz-border-radius-bottomright: 20px;
+-webkit-border-bottom-right-radius: 20px;
+width: 260px;
+height: auto;
+padding: 50px 10px 30px 10px;
+filter: alpha(opacity=85);
+opacity: .85;
+}
+
+.panel p{
+margin: 0 0 15px 0;
+padding: 0;
+color: #cccccc;
+}
+
+.panel a, .panel a:visited{
+margin: 0;
+padding: 0;
+color: #9FC54E;
+text-decoration: none;
+border-bottom: 1px solid #9FC54E;
+}
+
+.panel a:hover, .panel a:visited:hover{
+margin: 0;
+padding: 0;
+color: #ffffff;
+text-decoration: none;
+border-bottom: 1px solid #ffffff;
+}
+
+a.trigger{
+position: absolute;
+text-decoration: none;
+top: 80px; left: 0;
+font-size: 16px;
+letter-spacing:-1px;
+font-family: verdana, helvetica, arial, sans-serif;
+color:#fff;
+padding: 20px 40px 20px 15px;
+font-weight: 700;
+background:#333333 url(/images/plus.png) 85% 55% no-repeat;
+border:1px solid #444444;
+-moz-border-radius-topright: 20px;
+-webkit-border-top-right-radius: 20px;
+-moz-border-radius-bottomright: 20px;
+-webkit-border-bottom-right-radius: 20px;
+-moz-border-radius-bottomleft: 0px;
+-webkit-border-bottom-left-radius: 0px;
+display: block;
+}
+
+a.trigger:hover{
+position: absolute;
+text-decoration: none;
+top: 80px; left: 0;
+font-size: 16px;
+letter-spacing:-1px;
+font-family: verdana, helvetica, arial, sans-serif;
+color:#fff;
+padding: 20px 40px 20px 20px;
+font-weight: 700;
+background:#222222 url(/images/plus.png) 85% 55% no-repeat;
+border:1px solid #444444;
+-moz-border-radius-topright: 20px;
+-webkit-border-top-right-radius: 20px;
+-moz-border-radius-bottomright: 20px;
+-webkit-border-bottom-right-radius: 20px;
+-moz-border-radius-bottomleft: 0px;
+-webkit-border-bottom-left-radius: 0px;
+display: block;
+}
+
+a.active.trigger {
+background:#222222 url(/images/minus.png) 85% 55% no-repeat;
+}
+
+.columns{
+clear: both;
+width: 330px;
+padding: 0 0 20px 0;
+line-height: 22px;
+}
+
+.colleft{
+float: left;
+width: 130px;
+line-height: 22px;
+}
+
+.colright{
+float: right;
+width: 130px;
+line-height: 22px;
+}
+
+ul{
+padding: 0;
+margin: 0;
+list-style-type: none;
+}
+
+ul li{
+padding: 0;
+margin: 0;
+list-style-type: none;
+}
+
+#tabMenu li {
+    float:left;
+    height:32px;
+    width:39px;
+	top: 10px;
+    cursor:pointer;
+    cursor:hand;
+	z-index: 5 !important;
+	position: relative;
+}
+ 
+/* this is the button images */
+li.stop {background:url(/images/stop.png) no-repeat 0 -32px;}
+li.drive {background:url(/images/car4.png) no-repeat}
+li.loadfile {background:url(/images/tabFolder.gif) no-repeat 0 -32px;}
+li.props {background:url(/images/propety.png) no-repeat 0 -32px;}
+li.random {background:url(/images/tabRandom.gif) no-repeat 0 -32px;}
+ 
+li.mouseover {background-position:0 0;}
+li.mouseout {background-position:0 -32px;}
+li.selected {background-position:0 0;}
+ 
+.box {
+    width:227px
+}
+ 
+
+ 
+.boxBody {
+    background-color:#282828;
+}
+ 
+.boxBottom {
+    background:url(/images/boxBottom.gif) no-repeat;
+    height:11px;
+}
+ 
+.boxBody div.parent {
+    display:none;
+}
+ 
+.boxBody div.show {
+    display:block;
+}
+ 
+ 
+.boxBody #category a {
+    display:block
+}
+ 
+/* styling for the content*/
+.boxBody div ul {
+    margin:0 10px 0 25px;
+    padding:0;
+    width:190px;
+    list-style-image:url(/images/arrow.gif)
+}
+ 
+.boxBody div li {
+    border-bottom:1px dotted #8e8e8e; 
+    padding:4px 0;
+    cursor:hand;
+    cursor:pointer
+}
+ 
+.boxBody div ul li.last {
+    border-bottom:none
+}
+ 
+.boxBody div li span {
+    font-size:8px;
+    font-style:italic; 
+    color:#888;
+}
+ 

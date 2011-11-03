@@ -229,7 +229,65 @@ function myMax(x, x2)
 
 var loadingDialog;
 
+function setupEvents ()
+{
+    //$("#drive").button ({
+    //        icons: {
+    //            primary: "ui-icon-car"
+    //        },
+    //        text: false
+    //    });
+    //$("#stop").button ({
+    //        icons: {
+    //            primary: "ui-icon-stop"
+    //        },
+    //        text: false
+    //    });
+
+    //Get all the LI from the #tabMenu UL
+    $('#tabMenu li').click(function(){
+
+//            //perform the actions when it's not selected
+//            if (!$(this).hasClass('selected')) {   
+//
+//                //remove the selected class from all LI   
+//                $('#tabMenu li').removeClass('selected');
+//
+//                //Reassign the LI
+//                $(this).addClass('selected');
+//
+//                //Hide all the DIV in .boxBody
+//                $('.boxBody div.parent').slideUp('1500');
+//
+//                //Look for the right DIV in boxBody according to the Navigation UL index, therefore, the arrangement is very important.
+//                $('.boxBody div.parent:eq(' + $('#tabMenu > li').index(this) + ')').slideDown('1500');
+
+//            }
+        }).mouseover(function() {
+
+                //Add and remove class, Personally I dont think this is the right way to do it,
+                //if you have better ideas to toggle it, please comment   
+                $(this).addClass('mouseover');
+                $(this).removeClass('mouseout');  
+
+            }).mouseout(function() {
+
+                    //Add and remove class
+                    $(this).addClass('mouseout');
+                    $(this).removeClass('mouseover');   
+
+                });
+};
+
 function webGLStart() {
+
+    setupEvents ();
+    $(".props").click(function(){
+            $(".panel").toggle("fast");
+            $(this).toggleClass("active");
+            return false;
+        });
+
     loadingDialog = $('<div></div>')
     .html('Please be patient while the LandXML file loads. This may take a moment depending on the size of the LandXML file and the speed of your network connection.')
     .dialog({
@@ -240,6 +298,7 @@ function webGLStart() {
 
     jQuery("#proplist").jqGrid({ datatype: "local",
             height : 300,
+            width: 260,
             colNames: ["Property", "Value"],
             colModel : [{name : 'propname', index : 'propname', width: 120, sorttype: 'string'},
             {name : "value", index : "value", width: 140, sorttype: "string"}
@@ -277,7 +336,7 @@ function animateObject(teapot) {
 
     textures:{
         src: ['teapot.jpg', "7.jpg",
-        "road.png", "road5.jpg", "road2.png", "images/sky.jpg"],
+        "road.png", "road5.jpg", "road2.png", "images/sky.png"],
         parameters: [{
           name: 'TEXTURE_MAG_FILTER',
           value: 'LINEAR'
@@ -295,7 +354,7 @@ function animateObject(teapot) {
       var gl = app.gl,
           canvas = app.canvas,
           program = app.program;
-          app.camera = new PhiloGL.Camera (60, 1, 0.01, 100000);
+          app.camera = new PhiloGL.Camera (60, 1, 0.1, 100000);
           view = new PhiloGL.Mat4;
           camera = app.camera;
           theCamera = app.camera;
@@ -446,7 +505,7 @@ function animateObject(teapot) {
               12, 13, 14, 12, 14, 15,
               16, 17, 18, 16, 18, 19,
               20, 21, 22, 20, 22, 23],
-              textures: ["images/sky.jpg"],
+              textures: ["images/sky.png"],
           });
 
       cube.scale = new PhiloGL.Vec3(10000, 10000, 10000);
@@ -454,118 +513,118 @@ function animateObject(teapot) {
       cube.pickable = false;
       app.scene.add (cube);
 
-      var xmlDoc = $.parseXML($("#surface").html());
-      $(xmlDoc).find("Surface").each (function ()
-      {
-          $(this).find('P').each (function()
-              {
-                  var id = parseInt($(this).attr("id"), 10);
-                  var pt = $.map($(this).text().split(" "), parseFloat);
-                  if (pt.length != 3)
-                      console.log ('error');
-                  surfacePoints[id] = pt;
-              }
-          );
+      //var xmlDoc = $.parseXML($("#surface").html());
+      //$(xmlDoc).find("Surface").each (function ()
+      //{
+      //    $(this).find('P').each (function()
+      //        {
+      //            var id = parseInt($(this).attr("id"), 10);
+      //            var pt = $.map($(this).text().split(" "), parseFloat);
+      //            if (pt.length != 3)
+      //                console.log ('error');
+      //            surfacePoints[id] = pt;
+      //        }
+      //    );
 
-          $(this).find('F').each (function(){
-                  if ($(this).attr('i') != "1")
-                  {
-                      var pts = $.map($(this).text().split(' '), function(idx)
-                          {
-                              return parseInt (idx, 10);
-                          });
-                      faces.push (pts);
-                  }
-              });
-          var vertices = new Float32Array(surfacePoints.length * 3);
-          $(surfacePoints).each(function (i)
-              {
-                  if (surfacePoints[i])
-                  {
-                      //
-                      // swap x, y
-                      vertices[i * 3] = surfacePoints[i][1];
-                      vertices[i * 3 + 1] = surfacePoints[i][0];
-                      vertices[i * 3 + 2] = surfacePoints[i][2];
-                      minX = minX != undefined ? Math.min(minX, vertices[i*3]) : vertices[i * 3];
-                      minY = minY != undefined ? Math.min(minY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
-                      maxX = maxX != undefined ? Math.max(maxX, vertices[i*3]) : vertices[i * 3];
-                      maxY = maxY != undefined ? Math.max(maxY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
-                  }
-                  else
-                  {
-                      // vertices[i * 3] = 0;
-                      // vertices[i * 3+ 1] = 0;
-                      // vertices[i * 3+ 2] = 0;
-                  }
-              });
+      //    $(this).find('F').each (function(){
+      //            if ($(this).attr('i') != "1")
+      //            {
+      //                var pts = $.map($(this).text().split(' '), function(idx)
+      //                    {
+      //                        return parseInt (idx, 10);
+      //                    });
+      //                faces.push (pts);
+      //            }
+      //        });
+      //    var vertices = new Float32Array(surfacePoints.length * 3);
+      //    $(surfacePoints).each(function (i)
+      //        {
+      //            if (surfacePoints[i])
+      //            {
+      //                //
+      //                // swap x, y
+      //                vertices[i * 3] = surfacePoints[i][1];
+      //                vertices[i * 3 + 1] = surfacePoints[i][0];
+      //                vertices[i * 3 + 2] = surfacePoints[i][2];
+      //                minX = minX != undefined ? Math.min(minX, vertices[i*3]) : vertices[i * 3];
+      //                minY = minY != undefined ? Math.min(minY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
+      //                maxX = maxX != undefined ? Math.max(maxX, vertices[i*3]) : vertices[i * 3];
+      //                maxY = maxY != undefined ? Math.max(maxY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
+      //            }
+      //            else
+      //            {
+      //                // vertices[i * 3] = 0;
+      //                // vertices[i * 3+ 1] = 0;
+      //                // vertices[i * 3+ 2] = 0;
+      //            }
+      //        });
 
-          var uvMatrix = [];
+      //    var uvMatrix = [];
 
-          var oldRender = app.scene.render;
-          //app.scene.render = function ()
-          //{
-          //}
-          var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
-          $(surfacePoints).each(function (i)
-              {
-                  var u = Math.abs ((vertices[i*3] - minX) / maxDist);
-                  var v = Math.abs ((vertices[i*3 + 1] - minY) / maxDist);
-                  uvMatrix[i] = [u, v];
-              });
-          surface.vertices = vertices;
-          var arrayTemp = new Array(faces.length * 3);
-          var idx = 0;
-          $(faces).each (function (i){
-                  $.map(faces[i], function(v) {
-                          arrayTemp[idx++] = v;
-                      });
-              });
+      //    var oldRender = app.scene.render;
+      //    //app.scene.render = function ()
+      //    //{
+      //    //}
+      //    var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
+      //    $(surfacePoints).each(function (i)
+      //        {
+      //            var u = Math.abs ((vertices[i*3] - minX) / maxDist);
+      //            var v = Math.abs ((vertices[i*3 + 1] - minY) / maxDist);
+      //            uvMatrix[i] = [u, v];
+      //        });
+      //    surface.vertices = vertices;
+      //    var arrayTemp = new Array(faces.length * 3);
+      //    var idx = 0;
+      //    $(faces).each (function (i){
+      //            $.map(faces[i], function(v) {
+      //                    arrayTemp[idx++] = v;
+      //                });
+      //        });
 
-          surface.indices = arrayTemp;
+      //    surface.indices = arrayTemp;
 
-          var textCoords = new Float32Array(surfacePoints.length * 2);
-          var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
-          var factor = 1.0;
-          if (maxDist > 256)
-              factor = (maxDist / 256* 8);
+      //    var textCoords = new Float32Array(surfacePoints.length * 2);
+      //    var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
+      //    var factor = 1.0;
+      //    if (maxDist > 256)
+      //        factor = (maxDist / 256* 8);
 
-          for (var i = 0; i < surfacePoints.length; i++)
-          {
-              textCoords[i*2] = uvMatrix [i][0] * factor;
-              textCoords[i*2 + 1] = uvMatrix [i][1] * factor;
-          }
-          //for ( i = 0; i < faces.length; i++)
-          //{
-          //    for (j = 0; j < 6; j++)
-          //        textCoords [i*6 + j] = iTexCoords[j];
-          //    
-          //    var uv = getUv(faces[i]);
-          //    textCoords[i*6] = uv[0]
-          //    textCoords[i*6 + 1] = uv[1];
-          //    //uv = getUv(faces[i][1]);
-          //    textCoords[i*6 + 2] = uv[2];
-          //    textCoords[i*6 + 3] = uv[3];
-          //    //uv = getUv(faces[i][2]);
-          //    textCoords[i*6 + 4] = uv[4];
-          //    textCoords[i*6 + 5] = uv[5];
-          //}
+      //    for (var i = 0; i < surfacePoints.length; i++)
+      //    {
+      //        textCoords[i*2] = uvMatrix [i][0] * factor;
+      //        textCoords[i*2 + 1] = uvMatrix [i][1] * factor;
+      //    }
+      //    //for ( i = 0; i < faces.length; i++)
+      //    //{
+      //    //    for (j = 0; j < 6; j++)
+      //    //        textCoords [i*6 + j] = iTexCoords[j];
+      //    //    
+      //    //    var uv = getUv(faces[i]);
+      //    //    textCoords[i*6] = uv[0]
+      //    //    textCoords[i*6 + 1] = uv[1];
+      //    //    //uv = getUv(faces[i][1]);
+      //    //    textCoords[i*6 + 2] = uv[2];
+      //    //    textCoords[i*6 + 3] = uv[3];
+      //    //    //uv = getUv(faces[i][2]);
+      //    //    textCoords[i*6 + 4] = uv[4];
+      //    //    textCoords[i*6 + 5] = uv[5];
+      //    //}
 
-          surface.texCoords = textCoords;
+      //    surface.texCoords = textCoords;
 
-          //set buffers with cube data
-          var surfaceEnt = new AecEntity ([surface], "surface");
-          surfaceEnt.name = $(this).attr ('name');
-          //should be only one definition node
-          $(this).find ('Definition').each (function (){
-                  $.each (this.attributes, function (i, attrib){
-                          surfaceEnt.properties.push ( {propname: attrib.name, value : attrib.value});
-                      });
-              });
-          surfaceEnt.pickable = true;
-          surfaceEnt.update ();
-          surfaceEnt.addToDb (database);
-      });
+      //    //set buffers with cube data
+      //    var surfaceEnt = new AecEntity ([surface], "surface");
+      //    surfaceEnt.name = $(this).attr ('name');
+      //    //should be only one definition node
+      //    $(this).find ('Definition').each (function (){
+      //            $.each (this.attributes, function (i, attrib){
+      //                    surfaceEnt.properties.push ( {propname: attrib.name, value : attrib.value});
+      //                });
+      //        });
+      //    surfaceEnt.pickable = true;
+      //    surfaceEnt.update ();
+      //    surfaceEnt.addToDb (database);
+      //});
        //app.scene.add (surface);
        //teapot.update ();
        //app.scene.add (teapot);
@@ -582,43 +641,43 @@ function animateObject(teapot) {
        c = [5650, 3870, 72];
        u = [0, 0, 1];
 
-       $(xmlDoc).find('Alignment').each (function(){
-               //samplePoints.push (handleAlignment ($(this)));
-               //var value = $(this);
-               var name = $(this).attr("name");
-               $("#alignmentlist").append($('<option></option>').val(name).html(name));
-               var align = handleAlignment ($(this), true);
-               if (align["corridor"])
-               {
-                   var corridorEnttity = new AecEntity([align["corridor"] ], "corridor");
-                   var corridorNode = $(xmlDoc).find ("Roadway[alignmentRefs='" + name + "']")[0];
-                   if (corridorNode)
-                   {
-                       corridorEnttity.name = $(corridorNode).attr ('name'); 
-                       $.each (corridorNode.attributes, function (i, attrib){
-                               if (attrib.name != 'name')
-                                   corridorEnttity.properties.push ( {propname: attrib.name, value : attrib.value});
-                           });
-                   }
-                   corridorEnttity.pickable = true;
-                   corridorEnttity.update ();
-                   corridorEnttity.addToDb (database);
-               }
-              });
+       //$(xmlDoc).find('Alignment').each (function(){
+       //        //samplePoints.push (handleAlignment ($(this)));
+       //        //var value = $(this);
+       //        var name = $(this).attr("name");
+       //        $("#alignmentlist").append($('<option></option>').val(name).html(name));
+       //        var align = handleAlignment ($(this), true);
+       //        if (align["corridor"])
+       //        {
+       //            var corridorEnttity = new AecEntity([align["corridor"] ], "corridor");
+       //            var corridorNode = $(xmlDoc).find ("Roadway[alignmentRefs='" + name + "']")[0];
+       //            if (corridorNode)
+       //            {
+       //                corridorEnttity.name = $(corridorNode).attr ('name'); 
+       //                $.each (corridorNode.attributes, function (i, attrib){
+       //                        if (attrib.name != 'name')
+       //                            corridorEnttity.properties.push ( {propname: attrib.name, value : attrib.value});
+       //                    });
+       //            }
+       //            corridorEnttity.pickable = true;
+       //            corridorEnttity.update ();
+       //            corridorEnttity.addToDb (database);
+       //        }
+       //       });
 
-              $("#drive").click (function (e){
-               var align = $(xmlDoc).find ('Alignment[name="' + $("#alignmentlist").val() +'"]');
-               if (!align)
-                   alert ("can't find alignment with name: " +$("#alignmentlist").val()); 
-               var align = handleAlignment (align, false);
-               if (align["samplePoints"])
-               {
-                   //$.map (align["samplePoints"], function (v)
-                   //    {
-                   //    });
-                   driveWithSamplePoints (align["samplePoints"]);
-               }
-           });
+       //       $("#drive").click (function (e){
+       //        var align = $(xmlDoc).find ('Alignment[name="' + $("#alignmentlist").val() +'"]');
+       //        if (!align)
+       //            alert ("can't find alignment with name: " +$("#alignmentlist").val()); 
+       //        var align = handleAlignment (align, false);
+       //        if (align["samplePoints"])
+       //        {
+       //            //$.map (align["samplePoints"], function (v)
+       //            //    {
+       //            //    });
+       //            driveWithSamplePoints (align["samplePoints"]);
+       //        }
+       //    });
 
        $("#planttree").click (function (e){
                if (treeModel && corridor)
@@ -886,16 +945,17 @@ function animateObject(teapot) {
        var it;
        var itStat;
        var dimFx;
+       function doneAnmiation ()
+       {
+           app.events.picking = true; //enable picking after driving
+           clearInterval (it);
+           clearInterval (itStat);
+           it = undefined;
+           itStat = undefined;
+       };
        $("#stop").click (function (e){
               // if ($('#stop').val() != 'resume')
-               {
-                   clearInterval (it);
-                   clearInterval (itStat);
-              //     $("#stop").val ('resume');
-              //     $("#stop").text ('resume');
-                   it = undefined;
-                   itStat = undefined;
-               }
+              doneAnmiation ();
               // else
               // {
               //     jjit = setInterval(function() {
@@ -927,11 +987,8 @@ function animateObject(teapot) {
 
        function driveWithSamplePoints(smpPts)
        {
-           if (it)
-           {
-               clearInterval (it);
-               it = undefined;
-           }
+           doneAnmiation (); 
+           app.events.picking = false;
            var curIndex = 0;
            //create a Fx instance
            //dimFx = new PhiloGL.Fx({
@@ -983,10 +1040,7 @@ function animateObject(teapot) {
                    var nextPt = smpPts[curIndex + 1];
                else
                {
-                   clearInterval (it);
-                   clearInterval (itStat);
-                   itStat = undefined;
-                   it = undefined;
+                   doneAnmiation ();
                    return;
                }
                var c = pointFromToDist (smpPts[curIndex], nextPt, 20);
@@ -1007,7 +1061,6 @@ function animateObject(teapot) {
            //    });
 
            $("#stop").val('stop');
-           $("#stop").text ('stop');
 
            totalFrames = 0;
            lastTotalFrames = 0;
