@@ -11,7 +11,7 @@
 <script type="text/javascript" src="scripts/collada-loader.js"></script>
 <script type="text/javascript" src="scripts/jquery-1.6.3.min.js"></script>
 <script type="text/javascript" src="scripts/grid.locale-en.js"></script>
-<script type="text/javascript" src="scripts/jquery.jqGrid.src.js"></script>
+<script type="text/javascript" src="scripts/jquery.jqGrid.min.js"></script>
 <script type="text/javascript" src="scripts/jquery.qtip-1.0.0-rc3.js"></script>
 <script type="text/javascript" src="scripts/index.js"></script>
 <script type="text/javascript" src="scripts/jquery-ui-1.8.16.custom.min.js"></script>
@@ -54,11 +54,10 @@
 <div class="box">
  
   <ul id="tabMenu">
-    <li id="drivepan" class="drive"></li> <!--default button-->
+    <li id="drive" class="drive"></li> <!--default button-->
     <li id="stop" class="stop"></li>
     <li id="loadfile" class="loadfile"></li>
     <li id="props" class="props"></li>
-    <li id="turnon" class="turnon"></li>
   </ul>
  
   <div class="boxTop"></div>
@@ -117,36 +116,30 @@
         </div>
 </div>
 
-<div id="panels">
-   <div id="objprops" class="panel">
-         <div class="ui-widget">
-           <div>
-             <button id="loadtree">loadtree</button>
-             <button id="planttree">plant trees</button>
-             <button id="plantsingletree">plant One tree</button>
-             <button id="cleardb">cleardb</button>
-             <button id="stat">stat</button>
-           </div>
+<div class="panel">
+ <div id="controls">
+    <div class="ui-widget">
+      <select id="alignmentlist">
+      </select>
+      <div>
+      <button id="loadtree">loadtree</button>
+      <button id="planttree">plant trees</button>
+      <button id="plantsingletree">plant One tree</button>
+      <button id="cleardb">cleardb</button>
+      <button id="stat">stat</button>
+      </div>
+    </div>
+    <div id="properties" class="ui-widget"> 
+         <span class="ui-widget-header">Properties</span>
+         <div id="selprops" class="ui-widget-content">
+            <table id="proplist">
+            </table>
          </div>
-         <div id="properties" class="ui-widget"> 
-              <span class="ui-widget-header">Properties</span>
-              <div id="selprops" class="ui-widget-content">
-                 <table id="proplist">
-                 </table>
-              </div>
-         </div>
-   </div>
-  </div>
-  <div id="objlist" class="panel">
-      <table id='objcontainer'> </table>
-  </div>
-   <div style="clear:both;"></div>
+    </div>
+</div>
+<div style="clear:both;"></div>
 </div>
 <div id='dialogdiv'>
-</div>
-<div id='drivecontrol'>
-      <select id="alignmentlist"> </select>
-      <button id="drive">Go</div>
 </div>
 </body>
 </html>

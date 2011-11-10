@@ -10,24 +10,51 @@ var corridor;
 var minX, maxX, minY, maxY;
 var treeModel;
 var cube;
-var defaultElevOffset = 3.0;
-var glContext;
-var database;
 
-function ObjListEditCell (thethis, cl)
-{
-    $(thethis).toggleClass ("displayoff");
-    var rowData = $("#objcontainer").getRowData(cl);
-    var ent = database.findEntityByName (rowData.Name);
-    if (ent)
-    {
-        ent.visible = ! $(thethis).hasClass ('displayoff');
-        ent.update ();
-    }
+ PhiloGL.Shaders.Fragment.Ufm = [
 
-};
+    "#ifdef GL_ES",
+    "precision highp float;",
+    "#endif",
+    
+    "varying vec4 vColor;",
+    "varying vec2 vTexCoord;",
+    "varying vec3 lightWeighting;",
+    
+    "uniform bool hasTexture1;",
+    "uniform sampler2D sampler1;",
 
- AecEntity = function (subModels, type, db)
+    "uniform bool enablePicking;",
+    "uniform vec3 pickColor;",
+
+    "uniform bool hasFog;",
+    "uniform vec3 fogColor;",
+
+    "uniform float fogNear;",
+    "uniform float fogFar;",
+
+    "uniform vec4 colorUfm;",
+
+    "void main(){",
+      
+        "gl_FragColor = vec4(colorUfm.rgb * lightWeighting, colorUfm.a);",
+
+      "if(enablePicking) {",
+        "gl_FragColor = vec4(pickColor, 1.0);",
+      "}",
+      
+     // /* handle fog */
+     // "if (hasFog && colorUfm.r != 1.0) {",
+     //   "float depth = gl_FragCoord.z / gl_FragCoord.w;",
+     //   "float fogFactor = smoothstep(fogNear, fogFar, depth);",
+     //   "gl_FragColor = mix(gl_FragColor, vec4(fogColor, gl_FragColor.w), fogFactor);",
+     // "}",
+    
+    "}"
+
+  ].join("\n");
+
+AecEntity = function (subModels, type, db)
 {
     this.subModels = subModels || [];
     this.type = type || "none";
@@ -37,8 +64,6 @@ function ObjListEditCell (thethis, cl)
     this.position = new PhiloGL.Vec3(.0, .0, .0);
     this.lod = false;
     this.name = "";
-    this.cachedExtent = [];
-    this.visible = true;
     this.update ();
 
     if (db)
@@ -63,7 +88,6 @@ AecEntity.prototype.update = function ()
             this.lod = thethis.lod;
             this.parentEnt = thethis;
             this.pickable = thethis.pickable;
-            this.display = thethis.visible;
             this.update ();
         });
 };
@@ -86,73 +110,6 @@ AecEntity.prototype.facesCount = function ()
         }, 0);
 }
 
-function MergeExtent (first, sec)
-{
-    if (!first)
-        return sec;
-    if (! sec)
-        return first;
-    var l1 = first[0];
-    var l2 = sec[0];
-    var low = $.map (l1, function (v, i){
-            if (isNaN(v))
-                return l2[i];
-            if (isNaN(l2[i])) 
-                return v;
-            return Math.min (v, l2[i]);
-        });
-    var h1 = first[1];
-    var h2 = sec[1];
-    var high = $.map (h1, function (v, i){
-            if (v == NaN)
-                return h2[i];
-            if (h2[i] == NaN)
-                return v;
-            return Math.max (v, h2[i]);
-        });
-    return [low, high];
-};
-
-AecEntity.prototype.getExtent = function ()
-{
-
-    function ExtentAcceptPoint (extent, pt)
-    {
-        if (isNaN(pt[2]))
-            console.log ('getting NaN elevation...');
-        return MergeExtent (extent, [pt, pt]);
-    };
-
-    function getExtentForSubModel (model)
-    {
-        if (!model.indices || model.indices.length <= 0)
-            return;
-        var firstIndex = model.indices [0];
-        var ptStart = firstIndex * 3;
-         var low = high = [model.vertices[ptStart], model.vertices[ptStart + 1], model.vertices [ptStart + 2]];
-        var extent = [low, high];
-        for (var i = 1, l = model.indices.length; i < l; i++)
-        {
-            var ptStart = model.indices[i] * 3;
-            var curPt = [model.vertices[ptStart], model.vertices[ptStart + 1], model.vertices [ptStart + 2]];
-            extent = ExtentAcceptPoint (extent, curPt);
-            if (isNaN( extent[0][2]) || isNaN(extent[1][2]))
-                console.log ("NaN... " + i);
-        }
-        return extent;
-    };
-    var extent;
-    if (!this.cachedExtent || this.cachedExtent.length <= 0)
-    {
-        for (var i = 0, l = this.subModels.length; i < l; i++)
-        {
-            extent = MergeExtent (extent, getExtentForSubModel (this.subModels[i]));
-        }
-    }
-    this.cachedExtent = extent;
-    return extent;
-};
-
 AecDatabase = function (app)
 {
     this.app = app;
@@ -170,20 +127,9 @@ AecDatabase.prototype.clear = function ()
         }
     }
     this.entities = []; //reset to empty
-    this.cachedExtent = [];
     //var gl = this.app.gl;
     //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     //this.scene.render ();
-}
-
-AecDatabase.prototype.findEntityByName = function (name)
-{
-    for (var i = 0; i < this.entities.length; i++)
-    {
-        if (this.entities[i].name == name)
-            return this.entities[i];
-    }
-    return false;
 }
 
 AecDatabase.prototype.initEntity = function (entity)
@@ -217,17 +163,6 @@ PhiloGL.O3D.Model.prototype.clone = function ()
     newModel.render = this.render;
     return newModel;
 };
-
-AecDatabase.prototype.getExtent = function (entity)
-{
-    var extent;
-    for (var i = 0,  l = this.entities.length; i < l; i++)
-    {
-        extent = MergeExtent (extent, this.entities[i].getExtent ());
-    }
-    return extent;
-};
-
 
 //PhiloGL.O3D.Model.prototype.worldDraw = function (app)
 //{
@@ -296,21 +231,6 @@ var loadingDialog;
 
 function setupEvents ()
 {
-    $("#drivepan").click (function () {
-            var pos = $(this).offset ();
-            var driveDialog = $('#drivecontrol')
-            .dialog({
-                    autoOpen: true,
-                    modal: true,
-                    position: [pos.left, pos.top + 30],
-                    title: 'Select Alignment to Drive'
-                });
-        });
-
-    $("#turnon").click(function(){
-            $("#objlist").toggle("fast");
-            return false;
-        });
     //$("#drive").button ({
     //        icons: {
     //            primary: "ui-icon-car"
@@ -371,9 +291,7 @@ function setupEvents ()
                             radius : 2
                         }
                     },
-                    position: { target: "mouse",
-                        adjust: { x: 10, y: 2 }
-                    },
+                    position: { target: "mouse" },
                     show: 'mouseover',
                     hide: 'mouseout'
                 });
@@ -391,9 +309,7 @@ function setupEvents ()
                             radius : 2
                         }
                     },
-                    position: { target: "mouse", 
-                        adjust: { x: 10, y: 2 }
-                    },
+                    position: { target: "mouse" },
                     show: 'mouseover',
                     hide: 'mouseout'
                 });
@@ -411,9 +327,7 @@ function setupEvents ()
                             radius : 2
                         }
                     },
-                    position: { target: "mouse",
-                        adjust: { x: 10, y: 2 }
-                    },
+                    position: { target: "mouse" },
                     show: 'mouseover',
                     hide: 'mouseout'
                 });
@@ -432,9 +346,7 @@ function setupEvents ()
                             radius : 2
                         }
                     },
-                    position: { target: "mouse",
-                        adjust: { x: 10, y: 2 }
-                    },
+                    position: { target: "mouse" },
                     show: 'mouseover',
                     hide: 'mouseout'
                 });
@@ -444,8 +356,8 @@ function webGLStart() {
 
     setupEvents ();
     $(".props").click(function(){
-            //$(this).addClass('selected');
-            $("#objprops").toggle("fast");
+            $(".panel").toggle("fast");
+            $(this).toggleClass("active");
             return false;
         });
 
@@ -467,21 +379,6 @@ function webGLStart() {
         multiselect: false,
         caption : "Object Properties"
     });
-
-var lastSel;
-     $("#objcontainer").jqGrid({ datatype: "local",
-        height : 300,
-        width: 300,
-        colNames: ["Name", "Type", "Visible"], //, "Actions"],
-        colModel : [{name : 'Name', index : 'Name', width: 180, sorttype: 'string'},
-        {name : "Type", index : "Type", width: 140, sorttype: "string"},
-        {name : "Visible", index : "Visible", width: 80, sorttype: "string", align: "center"},
-        //{name : "Actions", index : "Actions", width: 75, sortable: false}
-        ],
-        multiselect: false,
-        caption : "Object Lists"
-    });
-
 
     surface = new PhiloGL.O3D.Model({
             textures: ["7.jpg"],
@@ -530,7 +427,7 @@ function animateObject(teapot) {
       var gl = app.gl,
           canvas = app.canvas,
           program = app.program;
-          app.camera = new PhiloGL.Camera (60, 1, 0.5, 100000);
+          app.camera = new PhiloGL.Camera (60, 1, 0.1, 100000);
           view = new PhiloGL.Mat4;
           camera = app.camera;
           theCamera = app.camera;
@@ -540,9 +437,8 @@ function animateObject(teapot) {
       gl.clearDepth(1);
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LEQUAL);
-      glContext = gl;
 
-      database = new AecDatabase (app);
+      var database = new AecDatabase (app);
 
       $("#loadtree").click (function (e){
               new PhiloGL.IO.XHR({
@@ -690,12 +586,173 @@ function animateObject(teapot) {
       cube.pickable = false;
       app.scene.add (cube);
 
+      //var xmlDoc = $.parseXML($("#surface").html());
+      //$(xmlDoc).find("Surface").each (function ()
+      //{
+      //    $(this).find('P').each (function()
+      //        {
+      //            var id = parseInt($(this).attr("id"), 10);
+      //            var pt = $.map($(this).text().split(" "), parseFloat);
+      //            if (pt.length != 3)
+      //                console.log ('error');
+      //            surfacePoints[id] = pt;
+      //        }
+      //    );
+
+      //    $(this).find('F').each (function(){
+      //            if ($(this).attr('i') != "1")
+      //            {
+      //                var pts = $.map($(this).text().split(' '), function(idx)
+      //                    {
+      //                        return parseInt (idx, 10);
+      //                    });
+      //                faces.push (pts);
+      //            }
+      //        });
+      //    var vertices = new Float32Array(surfacePoints.length * 3);
+      //    $(surfacePoints).each(function (i)
+      //        {
+      //            if (surfacePoints[i])
+      //            {
+      //                //
+      //                // swap x, y
+      //                vertices[i * 3] = surfacePoints[i][1];
+      //                vertices[i * 3 + 1] = surfacePoints[i][0];
+      //                vertices[i * 3 + 2] = surfacePoints[i][2];
+      //                minX = minX != undefined ? Math.min(minX, vertices[i*3]) : vertices[i * 3];
+      //                minY = minY != undefined ? Math.min(minY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
+      //                maxX = maxX != undefined ? Math.max(maxX, vertices[i*3]) : vertices[i * 3];
+      //                maxY = maxY != undefined ? Math.max(maxY, vertices[i*3 + 1]) : vertices[i * 3 + 1];
+      //            }
+      //            else
+      //            {
+      //                // vertices[i * 3] = 0;
+      //                // vertices[i * 3+ 1] = 0;
+      //                // vertices[i * 3+ 2] = 0;
+      //            }
+      //        });
+
+      //    var uvMatrix = [];
+
+      //    var oldRender = app.scene.render;
+      //    //app.scene.render = function ()
+      //    //{
+      //    //}
+      //    var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
+      //    $(surfacePoints).each(function (i)
+      //        {
+      //            var u = Math.abs ((vertices[i*3] - minX) / maxDist);
+      //            var v = Math.abs ((vertices[i*3 + 1] - minY) / maxDist);
+      //            uvMatrix[i] = [u, v];
+      //        });
+      //    surface.vertices = vertices;
+      //    var arrayTemp = new Array(faces.length * 3);
+      //    var idx = 0;
+      //    $(faces).each (function (i){
+      //            $.map(faces[i], function(v) {
+      //                    arrayTemp[idx++] = v;
+      //                });
+      //        });
+
+      //    surface.indices = arrayTemp;
+
+      //    var textCoords = new Float32Array(surfacePoints.length * 2);
+      //    var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
+      //    var factor = 1.0;
+      //    if (maxDist > 256)
+      //        factor = (maxDist / 256* 8);
+
+      //    for (var i = 0; i < surfacePoints.length; i++)
+      //    {
+      //        textCoords[i*2] = uvMatrix [i][0] * factor;
+      //        textCoords[i*2 + 1] = uvMatrix [i][1] * factor;
+      //    }
+      //    //for ( i = 0; i < faces.length; i++)
+      //    //{
+      //    //    for (j = 0; j < 6; j++)
+      //    //        textCoords [i*6 + j] = iTexCoords[j];
+      //    //    
+      //    //    var uv = getUv(faces[i]);
+      //    //    textCoords[i*6] = uv[0]
+      //    //    textCoords[i*6 + 1] = uv[1];
+      //    //    //uv = getUv(faces[i][1]);
+      //    //    textCoords[i*6 + 2] = uv[2];
+      //    //    textCoords[i*6 + 3] = uv[3];
+      //    //    //uv = getUv(faces[i][2]);
+      //    //    textCoords[i*6 + 4] = uv[4];
+      //    //    textCoords[i*6 + 5] = uv[5];
+      //    //}
+
+      //    surface.texCoords = textCoords;
+
+      //    //set buffers with cube data
+      //    var surfaceEnt = new AecEntity ([surface], "surface");
+      //    surfaceEnt.name = $(this).attr ('name');
+      //    //should be only one definition node
+      //    $(this).find ('Definition').each (function (){
+      //            $.each (this.attributes, function (i, attrib){
+      //                    surfaceEnt.properties.push ( {propname: attrib.name, value : attrib.value});
+      //                });
+      //        });
+      //    surfaceEnt.pickable = true;
+      //    surfaceEnt.update ();
+      //    surfaceEnt.addToDb (database);
+      //});
+       //app.scene.add (surface);
+       //teapot.update ();
+       //app.scene.add (teapot);
+     // camera.view.$translate(-4000, -4200, -6000);
+     // theCamera.view.$rotateXYZ(90, 0, 0);
+     // theCamera.view.$rotateXYZ(0, 0, 180);
+     // rCube = 0;
+       //draw ();
+       //setInterval(draw, 1000/60);
+
+       console.log ("camera.position", camera);
        y = 0;
        p = [5588, 3900, 82];
        c = [5650, 3870, 72];
        u = [0, 0, 1];
 
-              $("#planttree").click (function (e){
+       //$(xmlDoc).find('Alignment').each (function(){
+       //        //samplePoints.push (handleAlignment ($(this)));
+       //        //var value = $(this);
+       //        var name = $(this).attr("name");
+       //        $("#alignmentlist").append($('<option></option>').val(name).html(name));
+       //        var align = handleAlignment ($(this), true);
+       //        if (align["corridor"])
+       //        {
+       //            var corridorEnttity = new AecEntity([align["corridor"] ], "corridor");
+       //            var corridorNode = $(xmlDoc).find ("Roadway[alignmentRefs='" + name + "']")[0];
+       //            if (corridorNode)
+       //            {
+       //                corridorEnttity.name = $(corridorNode).attr ('name'); 
+       //                $.each (corridorNode.attributes, function (i, attrib){
+       //                        if (attrib.name != 'name')
+       //                            corridorEnttity.properties.push ( {propname: attrib.name, value : attrib.value});
+       //                    });
+       //            }
+       //            corridorEnttity.pickable = true;
+       //            corridorEnttity.update ();
+       //            corridorEnttity.addToDb (database);
+       //        }
+       //       });
+
+       //       $("#drive").click (function (e){
+       //        var align = $(xmlDoc).find ('Alignment[name="' + $("#alignmentlist").val() +'"]');
+       //        if (!align)
+       //            alert ("can't find alignment with name: " +$("#alignmentlist").val()); 
+       //        var align = handleAlignment (align, false);
+       //        if (align["samplePoints"])
+       //        {
+       //            //$.map (align["samplePoints"], function (v)
+       //            //    {
+       //            //    });
+       //            driveWithSamplePoints (align["samplePoints"]);
+       //        }
+       //    });
+
+       $("#planttree").click (function (e){
                if (treeModel && corridor)
                {
                    $(corridor.treepos).each (function ()
@@ -728,8 +785,7 @@ function animateObject(teapot) {
 
        var loadDatabaseFromXmlDoc = function (xmlDoc)
        {
-           database = new AecDatabase (app);
-           var surfacePoints = [];
+           var database = new AecDatabase (app);
            $(xmlDoc).find("Surface").each (function ()
                {
                    $(this).find('P').each (function()
@@ -741,7 +797,7 @@ function animateObject(teapot) {
                            surfacePoints[id] = pt;
                        }
                    );
-           var faces = [];
+
                    $(this).find('F').each (function(){
                            if ($(this).attr('i') != "1")
                            {
@@ -782,7 +838,6 @@ function animateObject(teapot) {
                    //{
                    //}
                    var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
-                   var uvMatrix = [];
                    $(surfacePoints).each(function (i)
                        {
                            var u = Math.abs ((vertices[i*3] - minX) / maxDist);
@@ -804,7 +859,7 @@ function animateObject(teapot) {
                    var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
                    var factor = 1.0;
                    if (maxDist > 256)
-                       factor = (maxDist / 256.0 * 8);
+                       factor = (maxDist / 256* 8);
 
                    for (var i = 0; i < surfacePoints.length; i++)
                    {
@@ -869,7 +924,6 @@ function animateObject(teapot) {
 
            $("#drive").unbind ('click');
            $("#drive").click (function (e){
-                   $('#drivecontrol').dialog ('close');
                    var align = $(xmlDoc).find ('Alignment[name="' + $("#alignmentlist").val() +'"]');
                    if (!align)
                        alert ("can't find alignment with name: " +$("#alignmentlist").val()); 
@@ -879,66 +933,8 @@ function animateObject(teapot) {
                        driveWithSamplePoints (align["samplePoints"]);
                    }
            });
-
-       $("#objcontainer").clearGridData (); //clear the property data
-       for (var x =0, l =  database.entities.length; x < l; x ++)
-       {
-           var model = database.entities[x];
-           var mydata = {Name: model.name, 
-               Type: model.type, 
-               Visible: model.visible};
-           jQuery("#objcontainer").jqGrid('addRowData', x + 1 ,mydata);
-       }
-       var ids = $("#objcontainer").jqGrid ("getDataIDs");
-       for(var i=0;i < ids.length;i++){ 
-           var cl = ids[i]; 
-           var rowData = $("#objcontainer").getRowData(cl);
-           sclass = "objdisplay";
-           if (rowData.Visible != "true")
-               sclass += " displayoff";
-           be = "<button class='" + sclass + "' type='button' onclick='ObjListEditCell(this, " + cl +")'>";
-           $("#objcontainer").jqGrid('setRowData',ids[i],{Visible:be}); 
-       }
-
-
        return database;
        }
-
-       function adjustCameraByExtent (extent)
-       {
-           var low = extent[0];
-           var high = extent[1];
-           var midPoint = $.map (low, function (v, i){
-                   return (v + high[i]) / 2.0;
-               });
-           var low2 = [].concat (low);
-           low2[2] = high[2]; 
-           var length = PhiloGL.Vec3.distTo (low2, high);
-           var z = high[2] + (1.732 * length / 2);
-           z = (high[2] + z) / 2;
-           theCamera.target = new PhiloGL.Vec3 (midPoint[0], midPoint[1], midPoint[2]);;
-           var curIndex = 0;
-           var endPos = [midPoint[0], midPoint[1], z];
-           var diffs = $.map (low, function (v, i){
-                   return (endPos[i] - v) / 100;
-               });
-           var curPt = low;
-           theCamera.up = [0, 1, 0];
-           cube.position = new PhiloGL.Vec3(midPoint[0], midPoint[1], midPoint[2]);
-           cube.update ();
-           var it = setInterval (function ()
-               {
-                   curIndex++;
-                   if (curIndex > 100)
-                       clearInterval (it);
-                   curPt = $.map (curPt, function (v, i){
-                           return v + diffs[i];
-                       });
-                   theCamera.position = new PhiloGL.Vec3 (curPt[0], curPt[1], curPt[2]);
-                   theCamera.update ();
-               }, 1000/30);
-
-       };
 
        $("#loadfile").click (function (e)
            {
@@ -969,8 +965,6 @@ function animateObject(teapot) {
                                                    database.clear ();
                                                    database = loadDatabaseFromXmlDoc (data);
                                                    chooseFileDialog.dialog ('close');
-                                                   var extent = database.getExtent ();
-                                                   adjustCameraByExtent (extent);
                                                })
                                            .fail (function (e, textStatus, errorThrown)
                                                {
@@ -1127,7 +1121,7 @@ function animateObject(teapot) {
                c.z = nextPt.z + 10;
                p.z += 15;
                theCamera.position = p;
-               theCamera.up = [0, 0, 1];
+               theCamera.up = u;
                theCamera.target = c;
                theCamera.update ();
                curIndex ++;
@@ -1328,17 +1322,10 @@ function fuzzyEq (dFirst, dSec)
 {
     return fuzzyZero (dFirst - dSec);
 };
-
 function fuzzyGreaterEqThan (dFirst, dSec)
 {
     var d = dFirst - dSec;
     return d > dblTol || fuzzyEq (dFirst, dSec); ;
-};
-
-function fuzzyGreaterThan (dFirst, dSec)
-{
-    var d = dFirst - dSec;
-    return d > dblTol
 };
 
 function getSamplePointsCurve(pStart, pEnd, ptCenter, radius, length, bClockWise, interval)
@@ -1529,25 +1516,23 @@ var tagHandler =  {Line: function(node)
         }
         this.findZAtstation = function (stn)
         {
-            //if (stn > 3474)
-            //    console.log ("here");
             var stnElvList = this.stnElvList;
             var low = 0;
             var high = stnElvList.length / 2;
             var mid;
-            while (low <= high)
+            while (low < high)
             {
                 mid = parseInt ((low + high) / 2, 10);
-                if (fuzzyGreaterThan (stn, stnElvList[mid * 2] ))
+                if (stnElvList[mid * 2] < stn)
                     low = mid + 1;
-                else if (fuzzyGreaterThan (stnElvList[mid * 2],  stn))
+                else if (stnElvList[mid * 2] > stn)
                 high = mid - 1;
                 else 
                     return stnElvList[mid * 2 + 1];
             }
             var nextIndex= mid + 1;
             var prevIndex= mid;
-            if (fuzzyGreaterThan(stnElvList[mid * 2], stn))
+            if (stn < stnElvList[mid * 2])
             {
                 if (mid > 0)
                     prevIndex = mid - 1;
@@ -1555,18 +1540,13 @@ var tagHandler =  {Line: function(node)
             }
 
             var elev = stnElvList[mid * 2 + 1];
-            if (prevIndex != nextIndex && nextIndex < stnElvList.length)
+            if (prevIndex != nextIndex)
             {
                 var totallength = stnElvList[nextIndex*2] - stnElvList[prevIndex * 2];
-                if (totallength != 0)
-                {
-                    var prevElev = stnElvList[prevIndex*2 + 1];
-                    var nextElev = stnElvList[nextIndex*2 + 1];
-                    elev = (stn - stnElvList[prevIndex*2]) * nextElev / totallength + (stnElvList[nextIndex*2] - stn) * prevElev / totallength;
-                }
+                var prevElev = stnElvList[prevIndex*2 + 1];
+                var nextElev = stnElvList[nextIndex*2 + 1];
+                elev = (stn - stnElvList[prevIndex*2]) * nextElev / totallength + (stnElvList[nextIndex*2] - stn) * prevElev / totallength;
             }
-            if (isNaN(elev))
-                console.log ('getting NaN Elevation value...' + stn);
             return elev;
         };
     };
@@ -1589,8 +1569,6 @@ function buildCorridorFromAlign(alignEnt)
         $(this).find("CrossSectPnt").each (function ()
             {
                 var offsetAndElev = $.map($(this).text().split (' '), parseFloat);
-                if (isNaN(offsetAndElev[1]) )
-                    console.log ("getting NaN elevation...");
                 if (secPoints[offsetAndElev[0]] == undefined)
                     secPoints[offsetAndElev[0]] = offsetAndElev[1];
                 else
@@ -1626,7 +1604,7 @@ function buildCorridorFromAlign(alignEnt)
         secPointsArray = sectionPtArrayNew;
         $(secPointsArray).each (function (i) {
                 var ptOffset = seg.findXYAtOffset (pt, secPointsArray[i].offset);
-                ptOffset.z = secPointsArray[i].elev + ptZCenter + defaultElevOffset;
+                ptOffset.z = secPointsArray[i].elev + ptZCenter + 3;
                 secPointsArray[i].point = ptOffset;
                 minX = myMin (minX, ptOffset.x);
                 minY = myMin (minY, ptOffset.y);
@@ -1782,15 +1760,6 @@ corridor = new PhiloGL.O3D.Model({
             program: "3d"
 });
     corridor.treepos = treespos;
-    //corridor.onBeforeRender = function (program){
-    //glContext.clear(glContext.DEPTH_BUFFER_BIT);
-    //    glContext.disable (glContext.DEPTH_TEST);
-//  //      program.setUniform('alwaysOnTop', true);
-    //};
-    //corridor.onAfterRender= function (){
-    //    glContext.enable(glContext.DEPTH_TEST);
-//        program.setUniform('alwaysOnTop', false);
-    //};
     return corridor;
 }
 
@@ -1809,6 +1778,41 @@ function handleAlignment (align, buildCorridor)
     var stnElvList = $.map (align.find ('ProfSurf').find ('PntList2D').text().split(' '), parseFloat);
     if (stnElvList.length % 2 != 0) //station - elevation map
         stnElvList = stnElvList.slice(0, startStn.length - 1);
+
+    function findZAtstation (stn)
+    {
+        var low = 0;
+        var high = stnElvList.length / 2;
+        var mid;
+        while (low < high)
+        {
+            mid = parseInt ((low + high) / 2, 10);
+            if (stnElvList[mid * 2] < stn)
+                low = mid + 1;
+            else if (stnElvList[mid * 2] > stn)
+                high = mid - 1;
+                else 
+                    return stnElvList[mid * 2 + 1];
+        }
+        var nextIndex= mid + 1;
+        var prevIndex= mid;
+        if (stn < stnElvList[mid * 2])
+        {
+            if (mid > 0)
+                prevIndex = mid - 1;
+            nextIndex = mid;
+        }
+
+        var elev = stnElvList[mid * 2 + 1];
+        if (prevIndex != nextIndex)
+        {
+            var totallength = stnElvList[nextIndex*2] - stnElvList[prevIndex * 2];
+            var prevElev = stnElvList[prevIndex*2 + 1];
+            var nextElev = stnElvList[nextIndex*2 + 1];
+            elev = (stn - stnElvList[prevIndex*2]) * nextElev / totallength + (stnElvList[nextIndex*2] - stn) * prevElev / totallength;
+        }
+        return elev;
+    };
 
     $(align.find ("CoordGeom")[0]).children().each (function ()
         {
@@ -1831,7 +1835,7 @@ function handleAlignment (align, buildCorridor)
                 {
                     if (startStn > endStn)
                         startStn = endStn;
-                    smpPt[i].z = alignEnt.findZAtstation (startStn);
+                    smpPt[i].z = findZAtstation (startStn);
                 }
                 lSamplePoints = lSamplePoints.concat (smpPt);
                 startStn = endStn;
