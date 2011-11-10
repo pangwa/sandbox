@@ -11,6 +11,16 @@ var minX, maxX, minY, maxY;
 var treeModel;
 var cube;
 
+PhiloGL.unproject (pt, camera)
+{
+    var pInversed = camera.projection.invert ();
+    return camera.view.mulMat4 (pInversed);
+};
+
+PhiloGL.Ray = function (ptOrig, ptTarget, )
+{
+};
+
  PhiloGL.Shaders.Fragment.Ufm = [
 
     "#ifdef GL_ES",
@@ -581,7 +591,7 @@ function animateObject(teapot) {
               textures: ["images/sky.png"],
           });
 
-      cube.scale = new PhiloGL.Vec3(10000, 10000, 10000);
+      cube.scale = new PhiloGL.Vec3(10, 10, 10);
       cube.update ();
       cube.pickable = false;
       app.scene.add (cube);
@@ -938,55 +948,69 @@ function animateObject(teapot) {
 
        $("#loadfile").click (function (e)
            {
-               $.ajax ("/landfiles.json",
+               $.ajax ("Intermediate_MadRiver.xml",
                    {
-                       datatype : "json"
-                   }
-               ).done (function (data) {
-                       $("#dialogdiv").html (""); //clear
-                       var listTable = $("<table>");
-                       $("#dialogdiv").append (listTable);
-                       listTable.append ("<thead><tr><th>Name</th><th>File</th><th> </th></tr></thead>");
-                       $(data).each (function (i,v){
-                               var theTr = $("<tr>");
-                               theTr.append ("<td>" + v.name + "</td>");
-                               theTr.append ("<td>" + v.landfilename + "</td>");
-                               theTr.append ("<td></td>");
-                               var tdFile = $("<button>View</button>");
-                               tdFile.click (function ()
-                                   {
-                                       $("#dialogdiv").html ("loading..."); 
-                                       $.ajax (v.landfileurl,
-                                           {
-                                               dataType : "xml"
-                                           }).done (function (data)
-                                               {
-                                                   $("#dialogdiv").html ("Processing..."); 
-                                                   database.clear ();
-                                                   database = loadDatabaseFromXmlDoc (data);
-                                                   chooseFileDialog.dialog ('close');
-                                               })
-                                           .fail (function (e, textStatus, errorThrown)
-                                               {
-                                                   $("#dialogdiv").html ("Error while loading file as xml..."); 
-                                               });
-                                   });
-                               theTr.append (tdFile);
-                               listTable.append (theTr);
-                           });
+                       dataType : "xml"
+                   }).done (function (data)
+                       {
+                           $("#dialogdiv").html ("Processing..."); 
+                           database.clear ();
+                           database = loadDatabaseFromXmlDoc (data);
+                           chooseFileDialog.dialog ('close');
+                       })
+                   .fail (function (e, textStatus, errorThrown)
+                       {
+                           $("#dialogdiv").html ("Error while loading file as xml..."); 
+                       });
+                   //$.ajax ("/landfiles.json",
+               //    {
+               //        datatype : "json"
+               //    }
+               //).done (function (data) {
+               //        $("#dialogdiv").html (""); //clear
+               //        var listTable = $("<table>");
+               //        $("#dialogdiv").append (listTable);
+               //        listTable.append ("<thead><tr><th>Name</th><th>File</th><th> </th></tr></thead>");
+               //        $(data).each (function (i,v){
+               //                var theTr = $("<tr>");
+               //                theTr.append ("<td>" + v.name + "</td>");
+               //                theTr.append ("<td>" + v.landfilename + "</td>");
+               //                theTr.append ("<td></td>");
+               //                var tdFile = $("<button>View</button>");
+               //                tdFile.click (function ()
+               //                    {
+               //                        $("#dialogdiv").html ("loading..."); 
+               //                        $.ajax (v.landfileurl,
+               //                            {
+               //                                dataType : "xml"
+               //                            }).done (function (data)
+               //                                {
+               //                                    $("#dialogdiv").html ("Processing..."); 
+               //                                    database.clear ();
+               //                                    database = loadDatabaseFromXmlDoc (data);
+               //                                    chooseFileDialog.dialog ('close');
+               //                                })
+               //                            .fail (function (e, textStatus, errorThrown)
+               //                                {
+               //                                    $("#dialogdiv").html ("Error while loading file as xml..."); 
+               //                                });
+               //                    });
+               //                theTr.append (tdFile);
+               //                listTable.append (theTr);
+               //            });
 
-                       chooseFileDialog = $('#dialogdiv')
-                       .dialog({
-                               autoOpen: true,
-                               modal: true,
-                               title: 'Files List',
-                               width: 400,
-                               height: 400
-                           });
-                   })
-               .fail (function (e, textStatus, errorThrown) {
-                       alert ('fail');
-                   });
+               //        chooseFileDialog = $('#dialogdiv')
+               //        .dialog({
+               //                autoOpen: true,
+               //                modal: true,
+               //                title: 'Files List',
+               //                width: 400,
+               //                height: 400
+               //            });
+               //    })
+               //.fail (function (e, textStatus, errorThrown) {
+               //        alert ('fail');
+               //    });
            });
 
        camera.view.lookAt (p, c, u);
