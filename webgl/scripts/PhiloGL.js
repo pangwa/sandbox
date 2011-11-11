@@ -4493,12 +4493,11 @@ $.splat = (function() {
     setupPicking: function() {
       //create picking program
       var program = PhiloGL.Program.fromDefaultShaders(),
-          pickingRes = Scene.PICKING_RES,
-          floor = Math.floor;
+      pickingRes = Scene.PICKING_RES;
       //create framebuffer
       app.setFrameBuffer('$picking', {
-        width: floor(app.canvas.width / pickingRes),
-        height: floor(app.canvas.height / pickingRes),
+        width: 5,
+        height: 1, 
         bindToTexture: {
           parameters: [{
             name: 'TEXTURE_MAG_FILTER',
@@ -4514,7 +4513,7 @@ $.splat = (function() {
       app.setFrameBuffer('$picking', false);
       this.pickingProgram = program;
     },
-    
+   
     //returns an element at the given position
     pick: function(x, y, lazy) {
       //setup the picking program if this is
@@ -4528,6 +4527,17 @@ $.splat = (function() {
       if (lazy && this.capture) {
         return this.lazyPick(x, y);
       }
+      var oldtarget = this.camera.target;
+      var oldpos = this.camera.position;
+      var ndcx = x * 2 / gl.canvas.width - 1;
+      var ndcy = 1 - y * 2 / gl.canvas.height;
+
+      var origin = PhiloGL.unproject ([ndcx, ndcy, -1.0], this.camera);
+      var target = PhiloGL.unproject ([ndcx, ndcy, 1.0], this.camera);
+      this.camera.target = target;
+      this.camera.position = origin;
+      this.camera.aspect = 5;
+      this.camera.update ();
 
       //normal picking
       var o3dHash = {},
@@ -4541,9 +4551,8 @@ $.splat = (function() {
           memoFog = config.effects.fog,
           width = gl.canvas.width,
           height = gl.canvas.height,
-          floor = Math.floor,
-          resWidth = floor(width / pickingRes),
-          resHeight = floor(height / pickingRes),
+          resWidth = 5,
+          resHeight = 1,
           hash = [],
           pixel = new Uint8Array(1 * 1 * 4),
           index = 0, 
@@ -4597,7 +4606,7 @@ $.splat = (function() {
         pindex = floor((x + (height - y) * resWidth) / pickingRes) * 4;
         pixel = [capture[pindex], capture[pindex + 1], capture[pindex + 2], capture[pindex + 3]];
       } else {
-        gl.readPixels(floor(x / pickingRes), floor((height - y) / pickingRes), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+        gl.readPixels(2, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
       } 
 
       var stringColor = [pixel[0], pixel[1], pixel[2]].join(),
@@ -4626,6 +4635,10 @@ $.splat = (function() {
       //If there was another program then set to reuse that program.
       if (program) program.use();
       gl.viewport(0, 0, app.canvas.width, app.canvas.height);
+      this.camera.target = oldtarget;
+      this.camera.position = oldpos;
+      this.camera.aspect = 1.0;
+      this.camera.update ();
 
       //store model hash and pixel array
       this.o3dHash = o3dHash;
