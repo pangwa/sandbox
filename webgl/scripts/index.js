@@ -12,6 +12,7 @@ var cube;
 var defaultElevOffset = 3.0;
 var glContext;
 var database;
+var pickcallback;
 
 PhiloGL.unproject = function (pt, camera)
 {
@@ -460,7 +461,7 @@ function setupEvents ()
                     $(this).removeClass('mouseover');   
 
                 });
-            $("#drive").qtip({
+            $("#drivepan").qtip({
                     content: {
                         text: 'Click this button to simulate driving on a road',
                         title: {
@@ -812,6 +813,21 @@ function animateObject(teapot) {
                }
            });
 
+       $("#plantsingletree").click (function (e){
+                   pickcallback = function (pos)
+                   {
+                       if (pos && treeModel)
+                       {
+                           var newModel = treeModel.clone ();
+                           newModel.position = pos;
+                           newModel.update ();
+                           newModel.addToDb (database);
+                       }
+                       //pickcallback = undefined;
+                   };
+               });
+
+
        $("#cleardb").click (function (e){
                database.clear ();
            });
@@ -882,17 +898,67 @@ function animateObject(teapot) {
                    //{
                    //}
                    var maxDist = Math.max (Math.abs(maxX - minX), Math.abs(maxY - minY));
-                   var uvMatrix = [];
-                   $(surfacePoints).each(function (i)
-                       {
-                           var u = Math.abs ((vertices[i*3] - minX) / maxDist);
-                           var v = Math.abs ((vertices[i*3 + 1] - minY) / maxDist);
-                           uvMatrix[i] = [u, v];
-                       });
-                   surface.vertices = vertices;
+                  surface.vertices = vertices;
                    var arrayTemp = new Array(faces.length * 3);
                    var idx = 0;
                    var normals = [];
+                   //
+                   // there're some unused vertices in surface model
+                   // remove these null vertices and update the indices.
+                   //
+                   function compactvertices (model, faces)
+                   {
+                       var usedvertices = [];
+                       var face;
+                       for (var i = 0, l = faces.length; i < l; i++)
+                       {
+                           //
+                           // map the used vertices
+                           //
+                           face = faces[i];
+                           usedvertices[face[0]] = true;
+                           usedvertices[face[1]] = true;
+                           usedvertices[face[2]] = true;
+                       }
+                       var newusedvertices = [];
+                       for (i = 0, l = usedvertices.length; i < l; i++)
+                       {
+                           if (usedvertices[i])
+                               newusedvertices.push (i);
+                       }
+                       var reversedIndices = [];
+                       //
+                       // map the index to the new value
+                       //
+                       for (i = 0, l = newusedvertices.length; i < l; i++)
+                           reversedIndices[newusedvertices[i]] = i; 
+
+                       for (var i = 0, l = faces.length; i < l; i++)
+                       {
+                           //
+                           // map the used vertices
+                           //
+                           face = faces[i];
+                           face[0] = reversedIndices[face[0]];
+                           face[1] = reversedIndices[face[1]];
+                           face[2] = reversedIndices[face[2]];
+                       }
+                       var newvertices = [];
+                       var newindex, oldindex, p;
+                       for (i = 0, l = newusedvertices.length; i < l; i++)
+                       {
+                           oldindex = newusedvertices[i];
+                           newindex = reversedIndices [oldindex];
+                           p = [].slice.call (model.vertices, oldindex*3, oldindex * 3 + 3);
+                           newvertices[newindex * 3] = p[0];
+                           newvertices[newindex * 3 + 1] = p[1];
+                           newvertices[newindex * 3 + 2] = p[2];
+                       }
+                       model.vertices = newvertices;
+                       return faces;
+                   };
+
+                   faces = compactvertices (surface, faces);
                    $(faces).each (function (i){
                            if (faces[i].length != 3)
                                console.log ("wrong faces!!!");
@@ -916,13 +982,21 @@ function animateObject(teapot) {
                       });
                    surface.indices = arrayTemp;
                    surface.normals = normals;
-
-                   var textCoords = new Float32Array(surfacePoints.length * 2);
+                   
+                   var uvMatrix = [];
+                   for (var i = 0, l = surface.vertices.length; i < l; i++)
+                       {
+                           var u = Math.abs ((surface.vertices[i*3] - minX) / maxDist);
+                           var v = Math.abs ((surface.vertices[i*3 + 1] - minY) / maxDist);
+                           uvMatrix[i] = [u, v];
+                       }
+ 
+                   var textCoords = new Float32Array(surface.vertices.length * 2 / 3);
                    var iTexCoords = [0.0, 0.0, 0.0, 1., 1, 1];
                    var factor = 1.0;
                    factor = (maxDist / 64.0 );
 
-                   for (var i = 0; i < surfacePoints.length; i++)
+                   for (var i = 0, l = surface.vertices.length/3; i < l; i++)
                    {
                        textCoords[i*2] = uvMatrix [i][0] * factor;
                        textCoords[i*2 + 1] = uvMatrix [i][1] * factor;
@@ -1280,7 +1354,11 @@ function animateObject(teapot) {
                  var ndcx = e.x * 2 / this.canvas.width;
                  var ndcy = e.y * 2 / this.canvas.height;
                  var ray = PhiloGL.MakeRay (camera, ndcx, ndcy);
-                 ray.intersectObject (model);
+                 var intersection = ray.intersectObject (model);
+                 if (intersection.length > 0 && pickcallback)
+                 {
+                     pickcallback (intersection[0].point);
+                 }
                  //model.uniforms.colorUfm = [1, 1, 1, 1];
                  //var points = [];
                  //var faces = [];
@@ -1601,6 +1679,7 @@ var tagHandler =  {Line: function(node)
     function Alignment (alignNode)
     {
         this.node = alignNode;
+        this.name = $(alignNode).attr("name");
         var stnElvList = [];
         if (this.node.find ('ProfSurf').length > 0)
         {
@@ -1612,7 +1691,9 @@ var tagHandler =  {Line: function(node)
         this.stnElvList = stnElvList;
         var geomotries = [];
 
-        var startStn = 0.0;
+        var startStn = parseFloat ($(alignNode).attr("staStart"))
+        if (isNaN (startStn))
+            startStn = 0.0;
         $(this.node.find ("CoordGeom")[0]).children().each (function ()
             {
                 if(! segCreator[this.tagName])
@@ -1698,6 +1779,11 @@ function buildCorridorFromAlign(alignEnt)
         var station = parseFloat($(this).attr('sta'));
         var ptZCenter = alignEnt.findZAtstation (station);
         var seg = alignEnt.findGeomAtStation(station);
+        if (!seg)
+        {
+            console.log ("can't find segment at station:" + station);
+            var seg = alignEnt.findGeomAtStation(station);
+        }
         
         var pt = seg.findPtAtStn (station);
         var secPoints = {}; //offset- elev
@@ -1816,7 +1902,7 @@ function buildCorridorModeFromSections (info)
 
         if (s1.length != s2.length)
         {
-            alert ('false');
+            console.log ("ignoring section whose points isn't the same");
             continue;
         }
 
@@ -2014,3 +2100,4 @@ function buildCorridor (align)
             }
         });
 };
+

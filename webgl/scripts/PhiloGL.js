@@ -4528,14 +4528,12 @@ $.splat = (function() {
         return this.lazyPick(x, y);
       }
       var oldtarget = this.camera.target;
-      var oldpos = this.camera.position;
+      var oldaspect = this.camera.aspect;
       var ndcx = x * 2 / gl.canvas.width - 1;
       var ndcy = 1 - y * 2 / gl.canvas.height;
-
       var origin = PhiloGL.unproject ([ndcx, ndcy, -1.0], this.camera);
       var target = PhiloGL.unproject ([ndcx, ndcy, 1.0], this.camera);
       this.camera.target = target;
-      this.camera.position = origin;
       this.camera.aspect = 5;
       this.camera.update ();
 
@@ -4636,8 +4634,7 @@ $.splat = (function() {
       if (program) program.use();
       gl.viewport(0, 0, app.canvas.width, app.canvas.height);
       this.camera.target = oldtarget;
-      this.camera.position = oldpos;
-      this.camera.aspect = 1.0;
+      this.camera.aspect = oldaspect;
       this.camera.update ();
 
       //store model hash and pixel array
