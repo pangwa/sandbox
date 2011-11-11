@@ -1073,10 +1073,11 @@ $.splat = (function() {
       var vx = vec[0],
           vy = vec[1],
           vz = vec[2];
+       var d = 1 / ( dest[3] * vx + dest[7] * vy + dest[11] * vz + dest[15]);
 
-      vec[0] = dest[0] * vx + dest[4] * vy + dest[8 ] * vz + dest[12];
-      vec[1] = dest[1] * vx + dest[5] * vy + dest[9 ] * vz + dest[13];
-      vec[2] = dest[2] * vx + dest[6] * vy + dest[10] * vz + dest[14];
+       vec[0] = (dest[0] * vx + dest[4] * vy + dest[8 ] * vz + dest[12] ) * d;
+       vec[1] = (dest[1] * vx + dest[5] * vy + dest[9 ] * vz + dest[13]) * d;
+       vec[2] = (dest[2] * vx + dest[6] * vy + dest[10] * vz + dest[14]) * d;
       return vec;
     },
 
@@ -4093,6 +4094,37 @@ $.splat = (function() {
   
   ].join("\n");
 
+  VertexShaders.Picking = [
+
+  ].join ("\n");
+
+  FragmentShaders.Picking = [
+  "uniform float far;\n",
+  "uniform vec3 pickcolor;\n",
+  "varying vec3 n;\n",
+  "varying vec4 UVCoord;\n",
+  "void main(void)\n",
+  "{\n",
+  "float Xcoord = gl_FragCoord.x+0.5;\n",
+  "if(Xcoord>0.0) gl_FragColor = vec4(pickcolor,1.0);\n",
+  "if(Xcoord>1.0) gl_FragColor = vec4(n,1.0);\n",
+  "if(Xcoord>2.0){",
+  "vec3 rgb=fract((gl_FragCoord.z/gl_FragCoord.w) * vec3(65536.0, 256.0, 1.0));\n",
+  "gl_FragColor=vec4(rgb-rgb.rrg*vec3(0.0,0.00390625,0.00390625),1.0);\n",
+  "}",
+  ,
+  "if(Xcoord>3.0){",
+  "vec3 rgb=fract(UVCoord.x * vec3(65536.0, 256.0, 1.0));\n",
+  "gl_FragColor=vec4(rgb-rgb.rrg*vec3(0.0,0.00390625,0.00390625),1.0);\n",
+  "}",
+  ,
+  "if(Xcoord>4.0){",
+  "vec3 rgb=fract(UVCoord.y * vec3(65536.0, 256.0, 1.0));\n",
+  "gl_FragColor=vec4(rgb-rgb.rrg*vec3(0.0,0.00390625,0.00390625),1.0);\n",
+  "}",
+  "}\n"
+  ].join ("");
+
 
  FragmentShaders.Default = [
 
@@ -4482,7 +4514,7 @@ $.splat = (function() {
       app.setFrameBuffer('$picking', false);
       this.pickingProgram = program;
     },
-    
+   
     //returns an element at the given position
     pick: function(x, y, lazy) {
       //setup the picking program if this is
@@ -4496,6 +4528,16 @@ $.splat = (function() {
       if (lazy && this.capture) {
         return this.lazyPick(x, y);
       }
+      var oldtarget = this.camera.target;
+      var oldpos = this.camera.position;
+      var ndcx = x * 2 / gl.canvas.width - 1;
+      var ndcy = 1 - y * 2 / gl.canvas.height;
+
+      var origin = PhiloGL.unproject ([ndcx, ndcy, -1.0], this.camera);
+      var target = PhiloGL.unproject ([ndcx, ndcy, 1.0], this.camera);
+      this.camera.target = target;
+      this.camera.position = origin;
+      this.camera.update ();
 
       //normal picking
       var o3dHash = {},
@@ -4510,8 +4552,8 @@ $.splat = (function() {
           width = gl.canvas.width,
           height = gl.canvas.height,
           floor = Math.floor,
-          resWidth = floor(width / pickingRes),
-          resHeight = floor(height / pickingRes),
+          resWidth = 4,
+          resHeight = 1,
           hash = [],
           pixel = new Uint8Array(1 * 1 * 4),
           index = 0, 
@@ -4565,7 +4607,7 @@ $.splat = (function() {
         pindex = floor((x + (height - y) * resWidth) / pickingRes) * 4;
         pixel = [capture[pindex], capture[pindex + 1], capture[pindex + 2], capture[pindex + 3]];
       } else {
-        gl.readPixels(floor(x / pickingRes), floor((height - y) / pickingRes), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+        gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
       } 
 
       var stringColor = [pixel[0], pixel[1], pixel[2]].join(),
@@ -4594,6 +4636,9 @@ $.splat = (function() {
       //If there was another program then set to reuse that program.
       if (program) program.use();
       gl.viewport(0, 0, app.canvas.width, app.canvas.height);
+      this.camera.target = oldtarget;
+      this.camera.position = oldpos;
+      this.camera.update ();
 
       //store model hash and pixel array
       this.o3dHash = o3dHash;
